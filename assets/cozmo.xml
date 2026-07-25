@@ -1,13 +1,38 @@
 <mujoco model="cozmo_real">
-  <compiler angle="radian" meshdir="meshes"/>
-  <option timestep="0.002" gravity="0 0 -9.81"/>
+  <!--
+    Physical constants sourced from pycozmo (pycozmo.robot module), which reverse-
+    engineers them directly from the real robot's firmware - these are the actual
+    values the real hardware enforces, not estimates:
+      MIN_HEAD_ANGLE   = -0.44 rad (-25.00 deg)
+      MAX_HEAD_ANGLE   =  0.78 rad ( 44.50 deg)
+      MIN_LIFT_ANGLE   = -0.20 rad (-11.36 deg)
+      MAX_LIFT_ANGLE   =  0.79 rad ( 45.41 deg)
+      MIN_LIFT_HEIGHT  = 32.0 mm
+      MAX_LIFT_HEIGHT  = 92.0 mm
+      LIFT_ARM_LENGTH  = 66.0 mm
+      LIFT_PIVOT_HEIGHT= 45.0 mm
+      MAX_WHEEL_SPEED  = 200.0 mm/s
+      TRACK_WIDTH      = 45.0 mm
+    Light cube size (44x44x44mm) confirmed from the official Anki Cozmo SDK source
+    comments (cozmo/examples/tutorials/04_cubes_and_objects/09_custom_objects.py).
+    Wheel radius (13.14mm front / 8.995mm rear) and body mesh geometry are from the
+    nilseuropa/anki_description URDF (measured/modeled by that project's author).
+
+    NOTE ON SIGN CONVENTIONS: the head and lift joint *ranges* below are taken
+    directly from pycozmo's real angle limits, but the *direction* (which way is
+    "up") depends on how the URDF's joint axis was defined, which I have not been
+    able to independently verify against the real robot. Test on real hardware
+    with small motions first, and flip the joint `axis` sign here if up/down comes
+    out reversed relative to `set_head_angle`/`set_lift_height`.
+  -->
+  <compiler angle="radian" meshdir="meshes" autolimits="true" inertiafromgeom="true"/>
+  <option timestep="0.001" gravity="0 0 -9.81"/>
   <visual>
     <global offwidth="1280" offheight="960"/>
   </visual>
 
   <default>
     <joint damping="0.02" armature="0.0005"/>
-    <geom contype="1" conaffinity="1" friction="1.0 0.005 0.0001"/>
   </default>
 
   <asset>
@@ -15,67 +40,89 @@
     <mesh name="cozmo_head" content_type="model/obj" file="cozmo_head.obj"/>
     <mesh name="cozmo_lift" content_type="model/obj" file="cozmo_lift.obj"/>
 
-    <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="512"/>
     <texture name="grid" type="2d" builtin="checker" rgb1="0.2 0.2 0.2" rgb2="0.3 0.3 0.3" width="512" height="512"/>
+
     <material name="grid_mat" texture="grid" texrepeat="20 20" reflectance="0.1"/>
     <material name="body_mat" rgba="0.12 0.12 0.12 1"/>
     <material name="wheel_mat" rgba="0.05 0.05 0.05 1"/>
+    <material name="cube_mat" rgba="0.85 0.35 0.05 1"/>
   </asset>
 
   <worldbody>
     <light pos="0 0 1.5" dir="0 0 -1" diffuse="0.9 0.9 0.9"/>
     <geom name="floor" type="plane" size="2 2 0.1" material="grid_mat"/>
 
+    <!-- Cozmo body -->
     <body name="cozmo" pos="0 0 0.03">
       <freejoint name="root"/>
-      <inertial pos="0 0 0" mass="0.06" diaginertia="2.785e-05 4.525e-05 4.525e-05"/>
 
-      <geom name="chassis" type="mesh" mesh="body3" material="body_mat" pos="0 0 -0.003"/>
+      <geom name="chassis" type="mesh" mesh="body3" material="body_mat" pos="0 0 -0.003" mass="0.06"/>
 
       <camera name="cozmo_cam" pos="0.045 0 0.01" euler="1.5708 0 -1.5708" fovy="70"/>
 
+      <!-- Head: real range -0.44 (down) to 0.78 (up) rad -->
       <body name="head" pos="0.0174507 0 0.019">
-        <inertial pos="0 0 0" mass="0.01" diaginertia="2.60417e-06 2.48083e-06 2.48083e-06"/>
-        <joint name="base_to_head" pos="0 0 0" axis="0 1 0" range="-0.52 0.17" damping="0.05"/>
-        <geom type="mesh" mesh="cozmo_head" material="body_mat"/>
+        <joint name="base_to_head" pos="0 0 0" axis="0 1 0" range="-0.44 0.78" damping="0.05"/>
+        <geom type="mesh" mesh="cozmo_head" material="body_mat" mass="0.01"/>
       </body>
 
+      <!-- Lift: real range -0.20 to 0.79 rad (arm angle, matches pycozmo's angle
+           representation of lift position directly) -->
       <body name="full_lift" pos="-0.005 0 0.013">
-        <inertial pos="0 0 0" mass="0.01" diaginertia="4.887e-06 7.551e-06 7.551e-06"/>
-        <joint name="base_to_lift" pos="0 0 0" axis="0 1 0" range="-0.8 0" damping="0.05"/>
-        <geom type="mesh" mesh="cozmo_lift" material="body_mat"/>
+        <joint name="base_to_lift" pos="0 0 0" axis="0 1 0" range="-0.20 0.79" damping="0.05"/>
+        <geom type="mesh" mesh="cozmo_lift" material="body_mat" mass="0.01"/>
       </body>
 
+      <!-- Wheels: y-offsets at +/-0.024m so left-right spacing = 48mm, matching
+           the xacro's own skid_steer_drive plugin wheelSeparation value directly
+           (not pycozmo's 45mm, which I mistakenly used in an earlier draft -
+           the xacro is the correct source here since it's specific to this exact
+           mesh/model, not a generic firmware constant) -->
       <body name="front_left_wheel" pos="0.03 0.024 -0.015" quat="0.707107 -0.707107 0 0">
-        <inertial pos="0 0 0" quat="0.5 0.5 -0.5 0.5" mass="0.01" diaginertia="8.633e-07 5.451e-07 5.451e-07"/>
         <joint name="front_left_wheel_joint" pos="0 0 0" axis="0 0 1"/>
-        <geom size="0.01314 0.00583695" type="cylinder" material="wheel_mat" friction="1.3 0.005 0.0001"/>
+        <geom size="0.01314 0.00583695" type="cylinder" material="wheel_mat" friction="1.3 0.005 0.0001" mass="0.01"/>
       </body>
 
       <body name="front_right_wheel" pos="0.03 -0.024 -0.015" quat="0.707107 -0.707107 0 0">
-        <inertial pos="0 0 0" quat="0.5 0.5 -0.5 0.5" mass="0.01" diaginertia="8.633e-07 5.451e-07 5.451e-07"/>
         <joint name="front_right_wheel_joint" pos="0 0 0" axis="0 0 1"/>
-        <geom size="0.01314 0.00583695" type="cylinder" material="wheel_mat" friction="1.3 0.005 0.0001"/>
+        <geom size="0.01314 0.00583695" type="cylinder" material="wheel_mat" friction="1.3 0.005 0.0001" mass="0.01"/>
       </body>
 
       <body name="rear_left_wheel" pos="-0.017 0.024 -0.0182" quat="0.707107 -0.707107 0 0">
-        <inertial pos="0 0 0" quat="0.5 0.5 -0.5 0.5" mass="0.01" diaginertia="4.046e-07 3.158e-07 3.158e-07"/>
         <joint name="rear_left_wheel_joint" pos="0 0 0" axis="0 0 1"/>
-        <geom size="0.008995 0.00583695" type="cylinder" material="wheel_mat" friction="1.3 0.005 0.0001"/>
+        <geom size="0.008995 0.00583695" type="cylinder" material="wheel_mat" friction="1.3 0.005 0.0001" mass="0.01"/>
       </body>
 
       <body name="rear_right_wheel" pos="-0.017 -0.024 -0.0182" quat="0.707107 -0.707107 0 0">
-        <inertial pos="0 0 0" quat="0.5 0.5 -0.5 0.5" mass="0.01" diaginertia="4.046e-07 3.158e-07 3.158e-07"/>
         <joint name="rear_right_wheel_joint" pos="0 0 0" axis="0 0 1"/>
-        <geom size="0.008995 0.00583695" type="cylinder" material="wheel_mat" friction="1.3 0.005 0.0001"/>
+        <geom size="0.008995 0.00583695" type="cylinder" material="wheel_mat" friction="1.3 0.005 0.0001" mass="0.01"/>
       </body>
+    </body>
+
+    <!-- Real Cozmo light cube: 44x44x44mm (half-size 0.022m), per official Anki SDK docs -->
+    <body name="target_cube" pos="0.3 0.1 0.022">
+      <freejoint name="cube_free"/>
+      <geom name="cube_geom" type="box" size="0.022 0.022 0.022" material="cube_mat" friction="0.8 0.005 0.0001"  mass="0.02"/>
     </body>
   </worldbody>
 
   <actuator>
-    <velocity name="left_front_motor" joint="front_left_wheel_joint" ctrlrange="-20 20"/>
-    <velocity name="left_rear_motor" joint="rear_left_wheel_joint" ctrlrange="-20 20"/>
-    <velocity name="right_front_motor" joint="front_right_wheel_joint" ctrlrange="-20 20"/>
-    <velocity name="right_rear_motor" joint="rear_right_wheel_joint" ctrlrange="-20 20"/>
+    <!-- Wheels: velocity control, matching pycozmo's drive_wheels() real API.
+         ctrlrange is wheel angular velocity in rad/s. Real MAX_WHEEL_SPEED is
+         200mm/s; at this wheel radius (13.14mm) that's 200/13.14 = 15.22 rad/s,
+         so ctrlrange is capped there to match the real robot's actual top speed
+         rather than an arbitrary faster value. kv tuned for stability at this
+         timestep (see conversation history for the sweep that found this value). -->
+    <velocity name="left_front_motor" joint="front_left_wheel_joint" ctrlrange="-15.22 15.22" kv="1.0"/>
+    <velocity name="left_rear_motor" joint="rear_left_wheel_joint" ctrlrange="-15.22 15.22" kv="1.0"/>
+    <velocity name="right_front_motor" joint="front_right_wheel_joint" ctrlrange="-15.22 15.22" kv="1.0"/>
+    <velocity name="right_rear_motor" joint="rear_right_wheel_joint" ctrlrange="-15.22 15.22" kv="1.0"/>
+
+    <!-- Head and lift: POSITION control, matching pycozmo's set_head_angle() /
+         set_lift_height() real API - these are "go-to-target" commands on the
+         real robot, not continuous velocity streams like the wheels. ctrlrange
+         matches the real joint range exactly. -->
+    <position name="head_motor" joint="base_to_head" ctrlrange="-0.44 0.78" kp="60"/>
+    <position name="lift_motor" joint="base_to_lift" ctrlrange="-0.20 0.79" kp="60"/>
   </actuator>
 </mujoco>

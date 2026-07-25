@@ -12,11 +12,7 @@ with mujoco.viewer.launch_passive(m, d) as viewer:
     start = time.time()
     while viewer.is_running():
         step_start = time.time()
-
-        # Drive in a slow arc
-        # [left_front, left_rear, right_front, right_rear]
-        d.ctrl[:] = [0.25, 0.25, 0.8, 0.8]
-
+        
         mujoco.mj_step(m, d)
         viewer.sync()
 

@@ -17,7 +17,7 @@ def main():
 
         # Drive forward for 2 seconds
         print("Driving forward...")
-        cli.drive_wheels(lwheel_speed=50.0, rwheel_speed=50.0, lwheel_acc=200.0, rwheel_acc=200.0, duration=2.0)
+        cli.drive_wheels(lwheel_speed=50.0, rwheel_speed=50.0, duration=2.0)
         time.sleep(2.2)  # give it time to finish before sending the next command
 
         # Turn in place
