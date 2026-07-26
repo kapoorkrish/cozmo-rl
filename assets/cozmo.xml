@@ -1,30 +1,4 @@
 <mujoco model="cozmo_real">
-  <!--
-    Physical constants sourced from pycozmo (pycozmo.robot module), which reverse-
-    engineers them directly from the real robot's firmware - these are the actual
-    values the real hardware enforces, not estimates:
-      MIN_HEAD_ANGLE   = -0.44 rad (-25.00 deg)
-      MAX_HEAD_ANGLE   =  0.78 rad ( 44.50 deg)
-      MIN_LIFT_ANGLE   = -0.20 rad (-11.36 deg)
-      MAX_LIFT_ANGLE   =  0.79 rad ( 45.41 deg)
-      MIN_LIFT_HEIGHT  = 32.0 mm
-      MAX_LIFT_HEIGHT  = 92.0 mm
-      LIFT_ARM_LENGTH  = 66.0 mm
-      LIFT_PIVOT_HEIGHT= 45.0 mm
-      MAX_WHEEL_SPEED  = 200.0 mm/s
-      TRACK_WIDTH      = 45.0 mm
-    Light cube size (44x44x44mm) confirmed from the official Anki Cozmo SDK source
-    comments (cozmo/examples/tutorials/04_cubes_and_objects/09_custom_objects.py).
-    Wheel radius (13.14mm front / 8.995mm rear) and body mesh geometry are from the
-    nilseuropa/anki_description URDF (measured/modeled by that project's author).
-
-    NOTE ON SIGN CONVENTIONS: the head and lift joint *ranges* below are taken
-    directly from pycozmo's real angle limits, but the *direction* (which way is
-    "up") depends on how the URDF's joint axis was defined, which I have not been
-    able to independently verify against the real robot. Test on real hardware
-    with small motions first, and flip the joint `axis` sign here if up/down comes
-    out reversed relative to `set_head_angle`/`set_lift_height`.
-  -->
   <compiler angle="radian" meshdir="meshes" autolimits="true" inertiafromgeom="true"/>
   <option timestep="0.001" gravity="0 0 -9.81"/>
   <visual>
@@ -36,9 +10,17 @@
   </default>
 
   <asset>
-    <mesh name="body3" content_type="model/obj" file="body3.obj"/>
-    <mesh name="cozmo_head" content_type="model/obj" file="cozmo_head.obj"/>
-    <mesh name="cozmo_lift" content_type="model/obj" file="cozmo_lift.obj"/>
+    <mesh name="chassis_mesh"          content_type="model/obj" file="Chassis.obj"         scale="0.001 0.001 0.001"/>
+    <mesh name="head_mesh"             content_type="model/obj" file="Head.obj"             scale="0.001 0.001 0.001"/>
+    <mesh name="lift_mesh"             content_type="model/obj" file="Lift.obj"             scale="0.001 0.001 0.001"/>
+    <mesh name="left_upper_arm_mesh"   content_type="model/obj" file="LeftUpperArm.obj"     scale="0.001 0.001 0.001"/>
+    <mesh name="left_lower_arm_mesh"   content_type="model/obj" file="LeftLowerArm.obj"     scale="0.001 0.001 0.001"/>
+    <mesh name="right_upper_arm_mesh"  content_type="model/obj" file="RightUpperArm.obj"    scale="0.001 0.001 0.001"/>
+    <mesh name="right_lower_arm_mesh"  content_type="model/obj" file="RightLowerArm.obj"    scale="0.001 0.001 0.001"/>
+    <mesh name="left_front_wheel_mesh"  content_type="model/obj" file="LeftFrontWheel.obj"  scale="0.001 0.001 0.001"/>
+    <mesh name="right_front_wheel_mesh" content_type="model/obj" file="RightFrontWheel.obj" scale="0.001 0.001 0.001"/>
+    <mesh name="left_rear_wheel_mesh"   content_type="model/obj" file="LeftRearWheel.obj"   scale="0.001 0.001 0.001"/>
+    <mesh name="right_rear_wheel_mesh"  content_type="model/obj" file="RightRearWheel.obj"  scale="0.001 0.001 0.001"/>
 
     <texture name="grid" type="2d" builtin="checker" rgb1="0.2 0.2 0.2" rgb2="0.3 0.3 0.3" width="512" height="512"/>
 
@@ -52,78 +34,103 @@
     <light pos="0 0 1.5" dir="0 0 -1" diffuse="0.9 0.9 0.9"/>
     <geom name="floor" type="plane" size="2 2 0.1" material="grid_mat"/>
 
-    <!-- Cozmo body -->
-    <body name="cozmo" pos="0 0 0.03">
+    <!-- Cozmo -->
+    <body name="cozmo" pos="0 0 0.001">
       <freejoint name="root"/>
 
-      <geom name="chassis" type="mesh" mesh="body3" material="body_mat" mass="0.06" contype="2" conaffinity="1"/>
+      <!-- Chassis -->
+      <geom name="chassis" type="mesh" mesh="chassis_mesh" material="body_mat" mass="0.12" contype="2" conaffinity="1"/>
 
-      <!-- Head: real range -0.44 (down) to 0.78 (up) rad. z corrected to 0.022003
-           to match joints.xacro's base_to_head origin exactly (was 0.019, a 3mm
-           error matching the earlier chassis-offset mistake). -->
-      <body name="head" pos="0.0174507 0 0.022003">
-        <joint name="base_to_head" pos="0 0 0" axis="0 1 0" range="-0.44 0.78" damping="0.05"/>
-        <geom type="mesh" mesh="cozmo_head" material="body_mat" mass="0.01" contype="2" conaffinity="1"/>
+      <!-- Head -->
+      <body name="head" pos="-0.01566 0 0.04883">
+        <joint name="base_to_head" pos="0 0 0" axis="0 -1 0" range="-0.44 0.78" damping="0.05"/>
+        <geom type="mesh" mesh="head_mesh" pos="0.01566 0 -0.04883" material="body_mat" mass="0.025" contype="2" conaffinity="1"/>
         <camera name="cozmo_cam" pos="0.020813 0 -0.0071471" quat="0.5 0.5 -0.5 -0.5" fovy="80"/>
       </body>
 
-      <!-- Lift: real range -0.20 to 0.79 rad (arm angle, matches pycozmo's angle
-           representation of lift position directly) -->
-      <body name="full_lift" pos="-0.005 0 0.013">
-        <joint name="base_to_lift" pos="0 0 0" axis="0 1 0" range="-0.20 0.79" damping="0.05"/>
-        <geom type="mesh" mesh="cozmo_lift" material="body_mat" mass="0.01" contype="2" conaffinity="1"/>
+      <!-- Lift -->
+      <body name="left_upper_arm" pos="-0.02651 0.02433 0.04263">
+        <joint name="left_upper_arm_joint" pos="0 0 0" axis="0 -1 0" range="-0.20 0.79" damping="0.05"/>
+        <geom type="mesh" mesh="left_upper_arm_mesh" pos="0.02651 -0.02433 -0.04263" material="body_mat" mass="0.0015" contype="2" conaffinity="1"/>
+
+        <body name="lift" pos="0.06342 -0.02433 -0.012205">
+          <joint name="upper_arm_to_lift_joint" pos="0 0 0" axis="0 -1 0" damping="0.02"/>
+          <geom type="mesh" mesh="lift_mesh" pos="-0.03691 0 -0.030425" material="body_mat" mass="0.009" contype="2" conaffinity="1"/>
+        </body>
       </body>
 
-      <!-- Wheels: z-positions corrected to match base.xacro's wheel macro exactly:
-           front wheels z=-0.012, rear wheels z=-0.0151707 (previous draft had
-           -0.015 / -0.0182, a consistent -0.003 offset introduced by mistake).
-           y-offsets at +/-0.024m so left-right spacing = 48mm, matching the
-           xacro's own skid_steer_drive plugin wheelSeparation value. -->
-      <body name="front_left_wheel" pos="0.03 0.024 -0.012" quat="0.707107 -0.707107 0 0">
-        <joint name="front_left_wheel_joint" pos="0 0 0" axis="0 0 1"/>
-        <geom size="0.01314 0.00583695" type="cylinder" material="wheel_mat" friction="1.3 0.005 0.0001" mass="0.01" contype="2" conaffinity="1"/>
+      <body name="left_lower_arm" pos="-0.02935 0.02274 0.03092">
+        <joint name="left_lower_arm_joint" pos="0 0 0" axis="0 -1 0" damping="0.02"/>
+        <geom type="mesh" mesh="left_lower_arm_mesh" pos="0.02935 -0.02274 -0.03092" material="body_mat" mass="0.0015" contype="2" conaffinity="1"/>
       </body>
 
-      <body name="front_right_wheel" pos="0.03 -0.024 -0.012" quat="0.707107 -0.707107 0 0">
-        <joint name="front_right_wheel_joint" pos="0 0 0" axis="0 0 1"/>
-        <geom size="0.01314 0.00583695" type="cylinder" material="wheel_mat" friction="1.3 0.005 0.0001" mass="0.01" contype="2" conaffinity="1"/>
+      <body name="right_upper_arm" pos="-0.02651 -0.02433 0.04263">
+        <joint name="right_upper_arm_joint" pos="0 0 0" axis="0 -1 0" range="-0.20 0.79" damping="0.05"/>
+        <geom type="mesh" mesh="right_upper_arm_mesh" pos="0.02651 0.02433 -0.04263" material="body_mat" mass="0.0015" contype="2" conaffinity="1"/>
       </body>
 
-      <body name="rear_left_wheel" pos="-0.017 0.024 -0.0151707" quat="0.707107 -0.707107 0 0">
-        <joint name="rear_left_wheel_joint" pos="0 0 0" axis="0 0 1"/>
-        <geom size="0.008995 0.00583695" type="cylinder" material="wheel_mat" friction="1.3 0.005 0.0001" mass="0.01" contype="2" conaffinity="1"/>
+      <body name="right_lower_arm" pos="-0.02935 -0.02274 0.03092">
+        <joint name="right_lower_arm_joint" pos="0 0 0" axis="0 -1 0" damping="0.02"/>
+        <geom type="mesh" mesh="right_lower_arm_mesh" pos="0.02935 0.02274 -0.03092" material="body_mat" mass="0.0015" contype="2" conaffinity="1"/>
       </body>
 
-      <body name="rear_right_wheel" pos="-0.017 -0.024 -0.0151707" quat="0.707107 -0.707107 0 0">
-        <joint name="rear_right_wheel_joint" pos="0 0 0" axis="0 0 1"/>
-        <geom size="0.008995 0.00583695" type="cylinder" material="wheel_mat" friction="1.3 0.005 0.0001" mass="0.01" contype="2" conaffinity="1"/>
+      <!-- Wheels -->
+      <body name="front_left_wheel" pos="0.01576 0.0212345 0.0129475">
+        <joint name="front_left_wheel_joint" pos="0 0 0" axis="0 1 0"/>
+        <geom type="mesh" mesh="left_front_wheel_mesh" pos="-0.01576 -0.0212345 -0.0129475" material="wheel_mat" friction="1.3 0.005 0.0001" mass="0.005" contype="2" conaffinity="1"/>
+      </body>
+
+      <body name="front_right_wheel" pos="0.01576 -0.0212345 0.0129475">
+        <joint name="front_right_wheel_joint" pos="0 0 0" axis="0 1 0"/>
+        <geom type="mesh" mesh="right_front_wheel_mesh" pos="-0.01576 0.0212345 -0.0129475" material="wheel_mat" friction="1.3 0.005 0.0001" mass="0.005" contype="2" conaffinity="1"/>
+      </body>
+
+      <body name="rear_left_wheel" pos="-0.0322105 0.021294 0.009218">
+        <joint name="rear_left_wheel_joint" pos="0 0 0" axis="0 1 0"/>
+        <geom type="mesh" mesh="left_rear_wheel_mesh" pos="0.0322105 -0.021294 -0.009218" material="wheel_mat" friction="1.3 0.005 0.0001" mass="0.005" contype="2" conaffinity="1"/>
+      </body>
+
+      <body name="rear_right_wheel" pos="-0.0322105 -0.021294 0.009218">
+        <joint name="rear_right_wheel_joint" pos="0 0 0" axis="0 1 0"/>
+        <geom type="mesh" mesh="right_rear_wheel_mesh" pos="0.0322105 0.021294 -0.009218" material="wheel_mat" friction="1.3 0.005 0.0001" mass="0.005" contype="2" conaffinity="1"/>
       </body>
     </body>
 
-    <!-- Real Cozmo light cube: 44x44x44mm (half-size 0.022m), per official Anki SDK docs -->
+    <!-- Cozmo cube -->
     <body name="target_cube" pos="0.3 0.1 0.022">
       <freejoint name="cube_free"/>
-      <geom name="cube_geom" type="box" size="0.022 0.022 0.022" material="cube_mat" friction="0.8 0.005 0.0001"  mass="0.02"/>
+      <geom name="cube_geom" type="box" size="0.022 0.022 0.022" material="cube_mat" friction="0.8 0.005 0.0001"  mass="0.055"/>
     </body>
   </worldbody>
 
-  <actuator>
-    <!-- Wheels: velocity control, matching pycozmo's drive_wheels() real API.
-         ctrlrange is wheel angular velocity in rad/s. Real MAX_WHEEL_SPEED is
-         200mm/s; at this wheel radius (13.14mm) that's 200/13.14 = 15.22 rad/s,
-         so ctrlrange is capped there to match the real robot's actual top speed
-         rather than an arbitrary faster value. kv tuned for stability at this
-         timestep (see conversation history for the sweep that found this value). -->
-    <velocity name="left_front_motor" joint="front_left_wheel_joint" ctrlrange="-15.22 15.22" kv="1.0"/>
-    <velocity name="left_rear_motor" joint="rear_left_wheel_joint" ctrlrange="-15.22 15.22" kv="1.0"/>
-    <velocity name="right_front_motor" joint="front_right_wheel_joint" ctrlrange="-15.22 15.22" kv="1.0"/>
-    <velocity name="right_rear_motor" joint="rear_right_wheel_joint" ctrlrange="-15.22 15.22" kv="1.0"/>
+  <equality>
+    <!-- Rotate wheels on same track together (radius ratio recomputed from the new wheel
+         meshes: front radius 12.9475mm, rear radius 9.218mm -> ratio 1.4046) -->
+    <joint joint1="front_left_wheel_joint" joint2="rear_left_wheel_joint" polycoef="0 1.4046 0 0 0"/>
+    <joint joint1="front_right_wheel_joint" joint2="rear_right_wheel_joint" polycoef="0 1.4046 0 0 0"/>
 
-    <!-- Head and lift: POSITION control, matching pycozmo's set_head_angle() /
-         set_lift_height() real API - these are "go-to-target" commands on the
-         real robot, not continuous velocity streams like the wheels. ctrlrange
-         matches the real joint range exactly. -->
-    <position name="head_motor" joint="base_to_head" ctrlrange="-0.44 0.78" kp="60"/>
-    <position name="lift_motor" joint="base_to_lift" ctrlrange="-0.20 0.79" kp="60"/>
+    <!-- Close the 4-bar lift linkage: pin the fork's lower-arm attachment point (given in
+         "lift"'s own local frame) to the tip of left_lower_arm. This is what makes the fork
+         track the correct height/orientation as left_upper_arm_joint is driven, instead of
+         swinging freely. -->
+    <connect name="lift_linkage_close" body1="lift" body2="left_lower_arm" anchor="-0.000025 0 -0.011065"/>
+
+    <!-- Right-side arms are mirror-image links; couple them 1:1 to their left counterparts
+         instead of adding a second independent closed loop (which would over-constrain the
+         same rigid "lift" body and fight the left-side loop numerically). -->
+    <joint joint1="right_upper_arm_joint" joint2="left_upper_arm_joint" polycoef="0 1 0 0 0"/>
+    <joint joint1="right_lower_arm_joint" joint2="left_lower_arm_joint" polycoef="0 1 0 0 0"/>
+  </equality>
+
+  <actuator>
+    <!-- Drive motors
+    200/12.9475 = 15.44 rad/s (updated for the actual front-wheel mesh radius) -->
+    <velocity name="left_motor" joint="front_left_wheel_joint" ctrlrange="-15.44 15.44" kv="1.0"/>
+    <velocity name="right_motor" joint="front_right_wheel_joint" ctrlrange="-15.44 15.44" kv="1.0"/>
+
+    <!-- Head and lift. lift_motor now drives left_upper_arm_joint (the real motor-driven
+         link); the rest of the linkage follows via the equality constraints above. -->
+    <position name="head_motor" joint="base_to_head" ctrlrange="-0.44 0.78" kp="1"/>
+    <position name="lift_motor" joint="left_upper_arm_joint" ctrlrange="-0.20 0.79" kp="1"/>
   </actuator>
 </mujoco>
