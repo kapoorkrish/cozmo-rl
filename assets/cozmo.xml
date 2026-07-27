@@ -1,6 +1,6 @@
 <mujoco model="cozmo_real">
   <compiler angle="radian" meshdir="meshes" autolimits="true" inertiafromgeom="true"/>
-  <option timestep="0.001" gravity="0 0 -9.81" integrator="implicitfast" iterations="80" ls_iterations="40"/>
+  <option timestep="0.001" gravity="0 0 -9.81"/>
   <visual>
     <global offwidth="1280" offheight="960"/>
   </visual>
@@ -10,17 +10,14 @@
   </default>
 
   <asset>
-    <mesh name="chassis_mesh"          content_type="model/obj" file="Chassis.obj"         scale="0.001 0.001 0.001"/>
-    <mesh name="head_mesh"             content_type="model/obj" file="Head.obj"             scale="0.001 0.001 0.001"/>
-    <mesh name="lift_mesh"             content_type="model/obj" file="Lift.obj"             scale="0.001 0.001 0.001"/>
-    <mesh name="left_upper_arm_mesh"   content_type="model/obj" file="LeftUpperArm.obj"     scale="0.001 0.001 0.001"/>
-    <mesh name="left_lower_arm_mesh"   content_type="model/obj" file="LeftLowerArm.obj"     scale="0.001 0.001 0.001"/>
-    <mesh name="right_upper_arm_mesh"  content_type="model/obj" file="RightUpperArm.obj"    scale="0.001 0.001 0.001"/>
-    <mesh name="right_lower_arm_mesh"  content_type="model/obj" file="RightLowerArm.obj"    scale="0.001 0.001 0.001"/>
-    <mesh name="left_front_wheel_mesh"  content_type="model/obj" file="LeftFrontWheel.obj"  scale="0.001 0.001 0.001"/>
-    <mesh name="right_front_wheel_mesh" content_type="model/obj" file="RightFrontWheel.obj" scale="0.001 0.001 0.001"/>
-    <mesh name="left_rear_wheel_mesh"   content_type="model/obj" file="LeftRearWheel.obj"   scale="0.001 0.001 0.001"/>
-    <mesh name="right_rear_wheel_mesh"  content_type="model/obj" file="RightRearWheel.obj"  scale="0.001 0.001 0.001"/>
+    <mesh name="body3" content_type="model/obj" file="body3.obj"/>
+    <mesh name="cozmo_head" content_type="model/obj" file="cozmo_head.obj"/>
+    <mesh name="left_upper_arm" content_type="model/obj" file="left_upper_arm.obj" scale="0.001 0.001 0.001"/>
+    <mesh name="right_upper_arm" content_type="model/obj" file="right_upper_arm.obj" scale="0.001 0.001 0.001"/>
+    <mesh name="left_lower_arm" content_type="model/obj" file="left_lower_arm.obj" scale="0.001 0.001 0.001"/>
+    <mesh name="right_lower_arm" content_type="model/obj" file="right_lower_arm.obj" scale="0.001 0.001 0.001"/>
+    <mesh name="fork" content_type="model/obj" file="fork.obj" scale="0.001 0.001 0.001"/>
+    <mesh name="cube" content_type="model/obj" file="cube.obj" scale="0.001 0.001 0.001"/>
 
     <texture name="grid" type="2d" builtin="checker" rgb1="0.2 0.2 0.2" rgb2="0.3 0.3 0.3" width="512" height="512"/>
 
@@ -35,115 +32,90 @@
     <geom name="floor" type="plane" size="2 2 0.1" material="grid_mat"/>
 
     <!-- Cozmo -->
-    <body name="cozmo" pos="0 0 0.001">
+    <body name="cozmo" pos="0 0 0.03">
       <freejoint name="root"/>
 
       <!-- Chassis -->
-      <geom name="chassis" type="mesh" mesh="chassis_mesh" material="body_mat" mass="0.06" contype="2" conaffinity="1"/>
+      <geom name="chassis" type="mesh" mesh="body3" material="body_mat" mass="0.06" contype="2" conaffinity="1"/>
 
       <!-- Head -->
-      <body name="head" pos="-0.01566 0 0.04883">
+      <body name="head" pos="0.0174507 0 0.022003">
         <joint name="base_to_head" pos="0 0 0" axis="0 -1 0" range="-0.44 0.78" damping="0.05"/>
-        <geom type="mesh" mesh="head_mesh" pos="0.01566 0 -0.04883" material="body_mat" mass="0.025" contype="2" conaffinity="1"/>
-        <camera name="cozmo_cam" pos="0.020813 0 -0.0071471" quat="0.5 0.5 -0.5 -0.5" fovy="80"/>
+        <geom type="mesh" mesh="cozmo_head" material="body_mat" mass="0.01" contype="2" conaffinity="1"/>
+        <camera name="cozmo_cam" pos="0.020813 0 -0.0071471" quat="0.5 0.5 -0.5 -0.5" fovy="45"/>
       </body>
 
-      <!-- Lift -->
-      <body name="left_upper_arm" pos="-0.02651 0.02433 0.04263">
-        <joint name="left_upper_arm_joint" pos="0 0 0" axis="0 -1 0" range="-0.20 0.79" damping="0.05"/>
-        <geom type="mesh" mesh="left_upper_arm_mesh" pos="0.02651 -0.02433 -0.04263" material="body_mat" mass="0.0015" contype="2" conaffinity="1"/>
+      <!-- Lift arms -->
+      <body name="right_upper_arm" pos="0 0 -0.023">
+        <joint name="right_upper_arm_joint" pos="-0.0130 -0.0223 0.0443" axis="0 -1 0" damping="0.05"/>
+        <geom type="mesh" mesh="right_upper_arm" material="body_mat" mass="0.0015" contype="2" conaffinity="1"/>
+      </body>
 
-        <body name="lift" pos="0.06342 -0.02433 -0.012205">
-          <joint name="upper_arm_to_lift_joint" pos="0 0 0" axis="0 -1 0" damping="0.02"/>
-          <geom type="mesh" mesh="lift_mesh" pos="-0.03691 0 -0.030425" material="body_mat" mass="0.009" contype="2" conaffinity="1"/>
+      <body name="left_upper_arm" pos="0 0 -0.023">
+        <joint name="left_upper_arm_joint" pos="-0.0130 0.0223 0.0443" axis="0 -1 0" damping="0.05"/>
+        <geom type="mesh" mesh="left_upper_arm" pos="0 0 -0.001443" material="body_mat" mass="0.0015" contype="2" conaffinity="1"/>
+      </body>
+
+      <body name="right_lower_arm" pos="0 0 -0.023">
+        <joint name="right_lower_arm_joint" pos="-0.0130 -0.0225 0.0320" axis="0 -1 0" range="-0.04 0.79" limited="true" solreflimit="0.005 1" solimplimit="0.95 0.99 0.001" damping="0.02"/>
+        <geom type="mesh" mesh="right_lower_arm" material="body_mat" mass="0.0015" contype="2" conaffinity="1"/>
+
+        <!-- Fork -->
+        <body name="fork" pos="0 0 0">
+          <joint name="right_lower_pivot" pos="0.0515 -0.0192 0.0182" axis="0 -1 0" damping="0.02"/>
+          <geom type="mesh" mesh="fork" material="body_mat" mass="0.009" contype="2" conaffinity="1"/>
         </body>
       </body>
 
-      <body name="left_lower_arm" pos="-0.02935 0.02274 0.03092">
-        <joint name="left_lower_arm_joint" pos="0 0 0" axis="0 -1 0" damping="0.02"/>
-        <geom type="mesh" mesh="left_lower_arm_mesh" pos="0.02935 -0.02274 -0.03092" material="body_mat" mass="0.0015" contype="2" conaffinity="1"/>
-      </body>
-
-      <body name="right_upper_arm" pos="-0.02651 -0.02433 0.04263">
-        <joint name="right_upper_arm_joint" pos="0 0 0" axis="0 -1 0" range="-0.20 0.79" damping="0.05"/>
-        <geom type="mesh" mesh="right_upper_arm_mesh" pos="0.02651 0.02433 -0.04263" material="body_mat" mass="0.0015" contype="2" conaffinity="1"/>
-      </body>
-
-      <body name="right_lower_arm" pos="-0.02935 -0.02274 0.03092">
-        <joint name="right_lower_arm_joint" pos="0 0 0" axis="0 -1 0" damping="0.02"/>
-        <geom type="mesh" mesh="right_lower_arm_mesh" pos="0.02935 0.02274 -0.03092" material="body_mat" mass="0.0015" contype="2" conaffinity="1"/>
+      <body name="left_lower_arm" pos="0 0 -0.023">
+        <joint name="left_lower_arm_joint" pos="-0.0130 0.0225 0.0320" axis="0 -1 0" range="-0.04 0.79" limited="true" solreflimit="0.005 1" solimplimit="0.95 0.99 0.001" damping="0.02"/>
+        <geom type="mesh" mesh="left_lower_arm" pos="0 0 -0.001072" material="body_mat" mass="0.0015" contype="2" conaffinity="1"/>
       </body>
 
       <!-- Wheels -->
-      <body name="front_left_wheel" pos="0.01576 0.0212345 0.0129475" quat="0.707107 -0.707107 0 0">
+      <body name="front_left_wheel" pos="0.03 0.024 -0.012" quat="0.707107 -0.707107 0 0">
         <joint name="front_left_wheel_joint" pos="0 0 0" axis="0 0 1"/>
-        <geom size="0.01314 0.00583695" type="cylinder" material="wheel_mat" friction="1.3 0.005 0.001" mass="0.01" contype="2" conaffinity="1"/>
+        <geom size="0.01314 0.00583695" type="cylinder" material="wheel_mat" friction="1.3 0.005 0.0001" mass="0.01" contype="2" conaffinity="1"/>
       </body>
 
-      <body name="front_right_wheel" pos="0.01576 -0.0212345 0.0129475" quat="0.707107 -0.707107 0 0">
+      <body name="front_right_wheel" pos="0.03 -0.024 -0.012" quat="0.707107 -0.707107 0 0">
         <joint name="front_right_wheel_joint" pos="0 0 0" axis="0 0 1"/>
-        <geom size="0.01314 0.00583695" type="cylinder" material="wheel_mat" friction="1.3 0.005 0.001" mass="0.01" contype="2" conaffinity="1"/>
+        <geom size="0.01314 0.00583695" type="cylinder" material="wheel_mat" friction="1.3 0.005 0.0001" mass="0.01" contype="2" conaffinity="1"/>
       </body>
 
-      <!-- Rear wheels: non-colliding (contype/conaffinity 0). Their rotation is fully
-           determined by the rigid belt-ratio equality constraint below, exactly like the
-           real tread-driven mechanism - they're not an independent traction point, so we
-           don't give them one in sim. This is what lets the coupling stay perfectly rigid
-           (accurate) without fighting a second, redundant ground contact. -->
-      <body name="rear_left_wheel" pos="-0.0322105 0.021294 0.009218" quat="0.707107 -0.707107 0 0">
+      <body name="rear_left_wheel" pos="-0.017 0.024 -0.0151707" quat="0.707107 -0.707107 0 0">
         <joint name="rear_left_wheel_joint" pos="0 0 0" axis="0 0 1"/>
-        <geom size="0.008995 0.00583695" type="cylinder" material="wheel_mat" friction="1.3 0.005 0.001" mass="0.01" contype="2" conaffinity="1"/>
+        <geom size="0.008995 0.00583695" type="cylinder" material="wheel_mat" friction="1.3 0.005 0.0001" mass="0.01" contype="2" conaffinity="1"/>
       </body>
 
-      <body name="rear_right_wheel" pos="-0.0322105 -0.021294 0.009218" quat="0.707107 -0.707107 0 0">
+      <body name="rear_right_wheel" pos="-0.017 -0.024 -0.0151707" quat="0.707107 -0.707107 0 0">
         <joint name="rear_right_wheel_joint" pos="0 0 0" axis="0 0 1"/>
-        <geom size="0.008995 0.00583695" type="cylinder" material="wheel_mat" friction="1.3 0.005 0.001" mass="0.01" contype="2" conaffinity="1"/>
+        <geom size="0.008995 0.00583695" type="cylinder" material="wheel_mat" friction="1.3 0.005 0.0001" mass="0.01" contype="2" conaffinity="1"/>
       </body>
     </body>
 
     <!-- Cozmo cube -->
     <body name="target_cube" pos="0.3 0.1 0.022">
       <freejoint name="cube_free"/>
-      <geom name="cube_geom" type="box" size="0.022 0.022 0.022" material="cube_mat" friction="0.8 0.005 0.0001"  mass="0.055"/>
+      <geom name="cube_geom" type="mesh" mesh="cube" material="cube_mat" friction="0.8 0.005 0.0001"  mass="0.05"/>
     </body>
   </worldbody>
 
   <equality>
-    <!-- Rotate wheels on same track together (radius ratio recomputed from the new wheel
-         meshes: front radius 12.9475mm, rear radius 9.218mm -> ratio 1.4046). Kept fully
-         rigid (default solref/solimp) to match the real belt/gear drivetrain exactly -
-         rear wheels no longer have ground contact (see worldbody), so there's nothing left
-         for this constraint to fight, and it doesn't need to be softened anymore. -->
-    <joint joint1="front_left_wheel_joint" joint2="rear_left_wheel_joint" polycoef="0 1.4608 0 0 0" solref="0.01 1" solimp="0.9 0.95 0.001"/>
-    <joint joint1="front_right_wheel_joint" joint2="rear_right_wheel_joint" polycoef="0 1.4608 0 0 0" solref="0.01 1" solimp="0.9 0.95 0.001"/>
+    <!-- Belt coupling of rear and front wheels, joint1 = 1.4608 * joint2 -->
+    <joint joint1="rear_left_wheel_joint" joint2="front_left_wheel_joint" polycoef="0 1.46081156198 0 0 0" solref="0.01 1" solimp="0.9 0.95 0.001"/>
+    <joint joint1="rear_right_wheel_joint" joint2="front_right_wheel_joint" polycoef="0 1.46081156198 0 0 0" solref="0.01 1" solimp="0.9 0.95 0.001"/>
 
-    <!-- Close the 4-bar lift linkage: pin the fork's lower-arm attachment point (given in
-         "lift"'s own local frame) to the tip of left_lower_arm. Softened the same way -
-         closed kinematic loops in MuJoCo are notoriously prone to constraint chatter when
-         solved perfectly rigidly, especially once the body is also in contact with other
-         things (arms can brush the cube/floor). -->
-    <connect name="lift_linkage_close" body1="lift" body2="left_lower_arm" anchor="-0.000025 0 -0.011065" solref="0.01 1" solimp="0.9 0.95 0.001"/>
-
-    <!-- Right-side arms are mirror-image links; couple them 1:1 to their left counterparts
-         instead of adding a second independent closed loop (which would over-constrain the
-         same rigid "lift" body and fight the left-side loop numerically). -->
-    <joint joint1="right_upper_arm_joint" joint2="left_upper_arm_joint" polycoef="0 1 0 0 0" solref="0.01 1" solimp="0.9 0.95 0.001"/>
-    <joint joint1="right_lower_arm_joint" joint2="left_lower_arm_joint" polycoef="0 1 0 0 0" solref="0.01 1" solimp="0.9 0.95 0.001"/>
+    <!-- Fork pivots -->
+    <connect name="right_upper_pivot" body1="fork" body2="right_upper_arm" anchor="0.0515 -0.0190 0.0305" solref="0.002 1" solimp="0.999 0.9999 0.00001"/>
+    <connect name="left_upper_pivot" body1="fork" body2="left_upper_arm" anchor="0.0515 0.0190 0.0305" solref="0.002 1" solimp="0.999 0.9999 0.00001"/>
+    <connect name="left_lower_pivot" body1="fork" body2="left_lower_arm" anchor="0.0515 0.0192 0.0182" solref="0.002 1" solimp="0.999 0.9999 0.00001"/>
   </equality>
 
-  <contact>
-    <exclude body1="cozmo" body2="world"/>
-  </contact>
-
   <actuator>
-    <!-- Drive motors
-    200/12.9475 = 15.44 rad/s (updated for the actual front-wheel mesh radius) -->
-    <velocity name="left_motor"  joint="front_left_wheel_joint"  ctrlrange="-15.44 15.44" kv="0.5"/>
-    <velocity name="right_motor" joint="front_right_wheel_joint" ctrlrange="-15.44 15.44" kv="0.5"/>
-
-    <!-- Head and lift. lift_motor now drives left_upper_arm_joint (the real motor-driven
-         link); the rest of the linkage follows via the equality constraints above. -->
+    <velocity name="left_front_motor" joint="front_left_wheel_joint" ctrlrange="-15.22 15.22" kv="1.0"/>
+    <velocity name="right_front_motor" joint="front_right_wheel_joint" ctrlrange="-15.22 15.22" kv="1.0"/>
     <position name="head_motor" joint="base_to_head" ctrlrange="-0.44 0.78" kp="1"/>
-    <position name="lift_motor" joint="left_upper_arm_joint" ctrlrange="-0.20 0.79" kp="1"/>
+    <position name="lift_motor" joint="right_lower_arm_joint" ctrlrange="-0.20 0.79" kp="1"/>
   </actuator>
 </mujoco>
