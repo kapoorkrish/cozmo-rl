@@ -3,7 +3,7 @@ import numpy as np
 import mujoco
 import mujoco.viewer
 
-MODEL_PATH = "assets/cozmo.xml"
+MODEL_PATH = "scene.xml"
 
 m = mujoco.MjModel.from_xml_path(MODEL_PATH)
 d = mujoco.MjData(m)

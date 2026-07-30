@@ -1,0 +1,116 @@
+<mujoco model="cozmo_cube">
+  <compiler angle="radian" autolimits="true" inertiafromgeom="auto"/>
+
+  <default>
+    <default class="cube_col">
+      <geom type="box" group="0" friction="0.8 0.005 0.0001" density="620.25"/>
+    </default>
+  </default>
+
+  <worldbody>
+  <!-- Primitive reconstruction of Cozmo light cube
+      NOTCHES: 18 x 7 x 7
+      CORNER CAVITIES: 7 x 7 footprint, inset to 6 x 6 (1 mm skin)
+  -->
+    <body name="target_cube" pos="0.3 0.1 0.0225">
+      <freejoint name="cube_free"/>
+
+      <!-- foot band: z 0.0 .. 1.0 mm from base -->
+      <geom name="cc_foot_00" class="cube_col"
+            size="0.009 0.0155 0.0005" pos="0 0 -0.022"/>
+      <geom name="cc_foot_01" class="cube_col"
+            size="0.0035 0.00375 0.0035" pos="0.019 -0.01875 -0.019"/>
+      <geom name="cc_foot_02" class="cube_col"
+            size="0.0035 0.00375 0.0035" pos="0.019 0.01875 -0.019"/>
+      <geom name="cc_foot_03" class="cube_col"
+            size="0.00325 0.0225 0.0005" pos="0.01225 0 -0.022"/>
+      <geom name="cc_foot_04" class="cube_col"
+            size="0.00675 0.00675 0.0005" pos="-0.01575 -0.01575 -0.022"/>
+      <geom name="cc_foot_05" class="cube_col"
+            size="0.00675 0.00675 0.0005" pos="-0.01575 0.01575 -0.022"/>
+      <geom name="cc_foot_06" class="cube_col"
+            size="0.00325 0.009 0.0005" pos="-0.01225 0 -0.022"/>
+      <geom name="cc_foot_07" class="cube_col"
+            size="0.0035 0.003 0.0005" pos="0.019 -0.012 -0.022"/>
+      <geom name="cc_foot_08" class="cube_col"
+            size="0.0035 0.003 0.0005" pos="0.019 0.012 -0.022"/>
+      <!-- slot band: z 1.0 .. 7.0 mm from base -->
+      <geom name="cc_slot_09" class="cube_col"
+            size="0.01525 0.0155 0.003" pos="0.00025 0 -0.0185"/>
+      <geom name="cc_slot_10" class="cube_col"
+            size="0.00375 0.00375 0.003" pos="-0.01875 0.01875 -0.0185"/>
+      <geom name="cc_slot_11" class="cube_col"
+            size="0.00325 0.00375 0.003" pos="-0.01825 -0.01875 -0.0185"/>
+      <geom name="cc_slot_12" class="cube_col"
+            size="0.00025 0.015 0.003" pos="-0.01525 0 -0.0185"/>
+      <geom name="cc_slot_13" class="cube_col"
+            size="0.0005 0.00675 0.003" pos="-0.022 -0.01575 -0.0185"/>
+      <geom name="cc_slot_14" class="cube_col"
+            size="0.003 0.0005 0.003" pos="-0.012 -0.022 -0.0185"/>
+      <geom name="cc_slot_15" class="cube_col"
+            size="0.0005 0.003 0.003" pos="-0.022 0.012 -0.0185"/>
+      <geom name="cc_slot_16" class="cube_col"
+            size="0.0005 0.003 0.003" pos="0.022 -0.012 -0.0185"/>
+      <geom name="cc_slot_17" class="cube_col"
+            size="0.0005 0.003 0.003" pos="0.022 0.012 -0.0185"/>
+      <geom name="cc_slot_18" class="cube_col"
+            size="0.003 0.0005 0.003" pos="0.012 0.022 -0.0185"/>
+      <geom name="cc_slot_19" class="cube_col"
+            size="0.003 0.0005 0.003" pos="0.012 -0.022 -0.0185"/>
+      <geom name="cc_slot_20" class="cube_col"
+            size="0.003 0.0005 0.003" pos="-0.012 0.022 -0.0185"/>
+      <geom name="cc_slot_21" class="cube_col"
+            size="0.00025 0.0035 0.003" pos="0.01525 0.019 -0.0185"/>
+      <geom name="cc_slot_22" class="cube_col"
+            size="0.00025 0.0035 0.003" pos="0.01525 -0.019 -0.0185"/>
+      <!-- shelf band: z 7.0 .. 7.5 mm from base -->
+      <geom name="cc_shelf_23" class="cube_col"
+            size="0.0225 0.0225 0.00025" pos="0 0 -0.01525"/>
+      <!-- lopkt band: z 7.5 .. 31.5 mm from base -->
+      <geom name="cc_lopkt_24" class="cube_col"
+            size="0.0155 0.0225 0.012" pos="0 0 -0.003"/>
+      <geom name="cc_lopkt_25" class="cube_col"
+            size="0.0035 0.0155 0.012" pos="0.019 0 -0.003"/>
+      <geom name="cc_lopkt_26" class="cube_col"
+            size="0.0035 0.0155 0.012" pos="-0.019 0 -0.003"/>
+      <geom name="cc_lopkt_27" class="cube_col"
+            size="0.0035 0.0005 0.003" pos="-0.019 0.022 -0.012"/>
+      <geom name="cc_lopkt_28" class="cube_col"
+            size="0.0035 0.0005 0.003" pos="-0.019 -0.022 -0.012"/>
+      <geom name="cc_lopkt_29" class="cube_col"
+            size="0.0005 0.0035 0.003" pos="0.022 0.019 -0.012"/>
+      <geom name="cc_lopkt_30" class="cube_col"
+            size="0.0005 0.0035 0.003" pos="0.022 -0.019 -0.012"/>
+      <geom name="cc_lopkt_31" class="cube_col"
+            size="0.003 0.0005 0.003" pos="0.0185 0.022 -0.012"/>
+      <geom name="cc_lopkt_32" class="cube_col"
+            size="0.0005 0.003 0.003" pos="-0.022 0.0185 -0.012"/>
+      <geom name="cc_lopkt_33" class="cube_col"
+            size="0.003 0.0005 0.003" pos="0.0185 -0.022 -0.012"/>
+      <geom name="cc_lopkt_34" class="cube_col"
+            size="0.0005 0.003 0.003" pos="-0.022 -0.0185 -0.012"/>
+      <!-- hipkt band: z 31.5 .. 37.5 mm from base -->
+      <geom name="cc_hipkt_35" class="cube_col"
+            size="0.0215 0.0155 0.003" pos="0 0 0.012"/>
+      <geom name="cc_hipkt_36" class="cube_col"
+            size="0.0155 0.003 0.003" pos="0 -0.0185 0.012"/>
+      <geom name="cc_hipkt_37" class="cube_col"
+            size="0.01225 0.0035 0.003" pos="0.00325 0.019 0.012"/>
+      <geom name="cc_hipkt_38" class="cube_col"
+            size="0.0005 0.022 0.003" pos="-0.022 -0.0005 0.012"/>
+      <geom name="cc_hipkt_39" class="cube_col"
+            size="0.0005 0.022 0.003" pos="0.022 -0.0005 0.012"/>
+      <geom name="cc_hipkt_40" class="cube_col"
+            size="0.0215 0.0005 0.003" pos="0 -0.022 0.012"/>
+      <geom name="cc_hipkt_41" class="cube_col"
+            size="0.00325 0.003 0.003" pos="-0.01225 0.0185 0.012"/>
+      <geom name="cc_hipkt_42" class="cube_col"
+            size="0.00675 0.0005 0.003" pos="-0.01575 0.022 0.012"/>
+      <geom name="cc_hipkt_43" class="cube_col"
+            size="0.0035 0.0005 0.003" pos="0.019 0.022 0.012"/>
+      <!-- cap band: z 37.5 .. 45.0 mm from base -->
+      <geom name="cc_cap_44" class="cube_col"
+            size="0.0225 0.0225 0.00375" pos="0 0 0.01875"/>
+    </body>
+  </worldbody>
+</mujoco>
