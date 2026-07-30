@@ -1,6 +1,6 @@
 <mujoco model="cozmo_scene">
   <compiler angle="radian" meshdir="./assets/meshes" autolimits="true" inertiafromgeom="auto"/>
-  <option timestep="0.001" gravity="0 0 -9.81"/>
+  <option timestep="0.001" gravity="0 0 -9.81" integrator="implicitfast"/>
 
   <visual>
     <global offwidth="1280" offheight="960"/>
