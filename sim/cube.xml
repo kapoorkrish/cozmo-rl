@@ -15,6 +15,9 @@
     <body name="target_cube" pos="0.3 0.1 0.0225">
       <freejoint name="cube_free"/>
 
+      <!-- IMU for accelerometer sensor -->
+      <site name="cube_imu" pos="0 0 0" size="0.001" group="4"/>
+
       <!-- foot band: z 0.0 .. 1.0 mm from base -->
       <geom name="cc_foot_00" class="cube_col"
             size="0.009 0.0155 0.0005" pos="0 0 -0.022"/>

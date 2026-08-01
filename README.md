@@ -25,6 +25,7 @@ New task is now learned, without PPO
 - Head angle [-0.44, 0.78] rad
 
 # Observation Space (8)
+## Cozmo
 ### Translational Position (mm)
 - pose_x
 - pose_y
@@ -42,3 +43,7 @@ New task is now learned, without PPO
 - 320 x 240 x 1 image
   - Downsample to 80 x 60 x 1
   - Stack of 3 for temporal info
+
+## Cube
+### Acceleration (mm/s^2)
+- [x, y, z]

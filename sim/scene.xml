@@ -18,4 +18,22 @@
 
   <include file="cozmo.xml"/>
   <include file="cube.xml"/>
+
+  <sensor>
+    <!-- Pose and heading
+    When level, heading is [cos yaw, sin yaw, 0] -->
+    <framepos name="pose" objtype="body" objname="cozmo"/>
+    <framexaxis name="pose_xaxis" objtype="body" objname="cozmo"/>
+
+    <!-- Wheel speeds -->
+    <jointvel name="lwheel_speed" joint="front_left_wheel_joint"/>
+    <jointvel name="rwheel_speed" joint="front_right_wheel_joint"/>
+
+    <!-- Lift and head angles -->
+    <jointpos name="lift_angle" joint="right_lower_arm_joint"/>
+    <jointpos name="head_angle" joint="base_to_head"/>
+
+    <!-- Cube IMU -->
+    <accelerometer name="cube_accel" site="cube_imu"/>
+  </sensor>
 </mujoco>

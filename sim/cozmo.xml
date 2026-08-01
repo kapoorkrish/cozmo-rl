@@ -29,6 +29,9 @@
       <!-- Internal hardware (for mass consideration) -->
       <geom name="internals" type="box" size="0.020 0.015 0.009" pos="0.005 0 -0.012" mass="0.0505" contype="0" conaffinity="0"/>
 
+      <!-- 3rd person cozmo view -->
+      <camera name="cozmo_chase" pos="-0.18 0 0.16" xyaxes="0 -1 0  0.574 0 0.819" fovy="60"/>
+
       <!-- Head -->
       <body name="head" pos="0.0174507 0 0.022003">
         <joint name="base_to_head" pos="0 0 0" axis="0 -1 0" range="-0.44 0.78" damping="0.05"/>
