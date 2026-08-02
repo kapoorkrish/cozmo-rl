@@ -14,7 +14,7 @@ DEFAULT_CAM = "cozmo_chase"
 
 
 class Window:
-    def __init__(self, m, d, track_body="cozmo"):
+    def __init__(self, m, d):
         self.m, self.d = m, d
 
         if not glfw.init():
@@ -31,7 +31,7 @@ class Window:
         self.scn = mujoco.MjvScene(m, maxgeom=10000)
         self.ctx = mujoco.MjrContext(m, mujoco.mjtFontScale.mjFONTSCALE_150)
 
-        self.track_body = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_BODY, track_body)
+        self.track_body = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_BODY, "cozmo")
 
         # Tracking and all defined <camera>
         self.cam_list = ["track"] + [
@@ -39,12 +39,12 @@ class Window:
             for i in range(m.ncam)
         ]
         self.cam_idx = 0
-        self.set_cam(self.cam_list.index(DEFAULT_CAM)
-                     if DEFAULT_CAM in self.cam_list else 0)
+        self.set_cam(self.cam_list.index(DEFAULT_CAM) if DEFAULT_CAM in self.cam_list else 0)
 
         self.held = set()
         self.paused = False
         self.on_reset = None
+        self.on_randomize = None
 
         glfw.set_key_callback(self.win, self._on_key)
 
@@ -70,6 +70,9 @@ class Window:
             elif key == glfw.KEY_R:
                 if self.on_reset:
                     self.on_reset()
+            elif key == glfw.KEY_T:
+                if self.on_randomize:
+                    self.on_randomize()
             elif key == glfw.KEY_RIGHT_BRACKET:
                 self.set_cam(self.cam_idx + 1)
             elif key == glfw.KEY_LEFT_BRACKET:
@@ -83,15 +86,13 @@ class Window:
     def render(self, status_lines=()):
         fw, fh = glfw.get_framebuffer_size(self.win)
         viewport = mujoco.MjrRect(0, 0, fw, fh)
-        mujoco.mjv_updateScene(self.m, self.d, self.opt, None, self.cam,
-                               mujoco.mjtCatBit.mjCAT_ALL, self.scn)
+        mujoco.mjv_updateScene(self.m, self.d, self.opt, None, self.cam, mujoco.mjtCatBit.mjCAT_ALL, self.scn)
         mujoco.mjr_render(viewport, self.scn, self.ctx)
 
         lines = list(status_lines) + [f"Camera  {self.cam_list[self.cam_idx]}"]
         if self.paused:
             lines.append("PAUSED")
-        mujoco.mjr_overlay(mujoco.mjtFont.mjFONT_NORMAL,
-                           mujoco.mjtGridPos.mjGRID_TOPLEFT,
+        mujoco.mjr_overlay(mujoco.mjtFont.mjFONT_NORMAL, mujoco.mjtGridPos.mjGRID_TOPLEFT,
                            viewport, "\n".join(lines), "", self.ctx)
 
         glfw.swap_buffers(self.win)

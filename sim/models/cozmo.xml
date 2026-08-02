@@ -1,5 +1,5 @@
 <mujoco model="cozmo">
-  <compiler angle="radian" meshdir="./assets/meshes" autolimits="true" inertiafromgeom="auto"/>
+  <compiler angle="radian" meshdir="../assets/meshes" autolimits="true" inertiafromgeom="auto"/>
 
   <default>
     <joint damping="0.02" armature="0.0005"/>

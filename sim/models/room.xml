@@ -1,0 +1,29 @@
+<mujoco model="room">
+  <asset>
+    <texture name="tex_floor" type="2d" builtin="checker"
+             rgb1="0.35 0.30 0.25" rgb2="0.45 0.40 0.33" width="512" height="512"/>
+    <texture name="tex_wall" type="2d" builtin="flat"
+             rgb1="0.85 0.84 0.80" width="512" height="512"/>
+
+    <material name="floor_mat" texture="tex_floor" texuniform="true" texrepeat="3 3"
+              reflectance="0.05" specular="0.2" shininess="0.3"/>
+    <material name="wall_mat" texture="tex_wall" texuniform="true" texrepeat="1 1"
+              specular="0.1" shininess="0.1"/>
+  </asset>
+
+  <worldbody>
+    <light name="key" pos="0.5 0.5 1.3" dir="-0.3 -0.3 -1" diffuse="0.7 0.7 0.7"/>
+    <light name="fill" pos="-0.7 0.2 1.2" dir="0.4 0 -1" diffuse="0.3 0.3 0.3" castshadow="false"/>
+
+    <!-- 2.4 x 2.4 m, 1.5 m high, 20 mm thick -->
+    <geom name="floor" type="plane" size="1.2 1.2 0.05" material="floor_mat"/>
+
+    <geom name="wall_px" type="box" pos="1.22 0 0.75" size="0.02 1.22 0.75" material="wall_mat"/>
+    <geom name="wall_nx" type="box" pos="-1.22 0 0.75" size="0.02 1.22 0.75" material="wall_mat"/>
+    <geom name="wall_py" type="box" pos="0 1.22 0.75" size="1.22 0.02 0.75" material="wall_mat"/>
+    <geom name="wall_ny" type="box" pos="0 -1.22 0.75" size="1.22 0.02 0.75" material="wall_mat"/>
+
+    <!-- Ceiling -->
+    <geom name="ceiling" type="box" pos="0 0 1.52" size="1.22 1.22 0.02" material="wall_mat"/>
+  </worldbody>
+</mujoco>

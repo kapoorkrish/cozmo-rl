@@ -1,21 +1,13 @@
 <mujoco model="cozmo_scene">
-  <compiler angle="radian" meshdir="./assets/meshes" autolimits="true" inertiafromgeom="auto"/>
+  <compiler angle="radian" meshdir="../assets/meshes" autolimits="true" inertiafromgeom="auto"/>
   <option timestep="0.001" gravity="0 0 -9.81" integrator="implicitfast"/>
 
   <visual>
     <global offwidth="1280" offheight="960"/>
+    <quality shadowsize="4096"/>
   </visual>
 
-  <asset>
-    <texture name="grid" type="2d" builtin="checker" rgb1="0.2 0.2 0.2" rgb2="0.3 0.3 0.3" width="512" height="512"/>
-    <material name="grid_mat" texture="grid" texrepeat="20 20" reflectance="0.1"/>
-  </asset>
-
-  <worldbody>
-    <light pos="0 0 1.5" dir="0 0 -1" diffuse="0.9 0.9 0.9"/>
-    <geom name="floor" type="plane" size="2 2 0.1" material="grid_mat"/>
-  </worldbody>
-
+  <include file="room.xml"/>
   <include file="cozmo.xml"/>
   <include file="cube.xml"/>
 

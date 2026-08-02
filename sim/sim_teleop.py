@@ -5,18 +5,22 @@
   Up / Down     Move head
   Left / Right  Move lift
   [ / ]         Cycle camera (chase / cozmo_cam / tracking)
+  T             New floor / wall textures
   Space         Pause / resume
   R             Reset
   Esc           Quit
 """
 
 import time
+from pathlib import Path
+
 import mujoco
 
 from teleop.control import Control, DT_CTRL
 from teleop.window import Window
+from domain_rand import DomainRandomizer
 
-MODEL_PATH = "scene.xml"
+MODEL_PATH = str(Path(__file__).parent / "models" / "scene.xml")
 
 
 def main():
@@ -25,7 +29,11 @@ def main():
 
     control = Control(m, d)
     window = Window(m, d)
+    rand = DomainRandomizer(m)
+
     window.on_reset = control.reset
+    window.on_randomize = lambda: rand.randomize(window.ctx)
+    rand.randomize(window.ctx)
 
     print(__doc__)
     next_wall = time.perf_counter()
