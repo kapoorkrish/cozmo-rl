@@ -12,19 +12,17 @@
 """
 
 import time
-from pathlib import Path
-
 import mujoco
 
-from teleop.control import Control, DT_CTRL
-from teleop.window import Window
-from domain_rand import DomainRandomizer
+from utils.teleop.control import Control, DT_CTRL
+from utils.teleop.window import Window
 
-MODEL_PATH = str(Path(__file__).parent / "models" / "scene.xml")
+from utils.domain_rand import DomainRandomizer
+from utils.world import build_model
 
 
 def main():
-    m = mujoco.MjModel.from_xml_path(MODEL_PATH)
+    m = build_model(num_cubes=1)
     d = mujoco.MjData(m)
 
     control = Control(m, d)

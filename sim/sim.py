@@ -1,14 +1,12 @@
 import time
-from pathlib import Path
 
 import mujoco
 import mujoco.viewer
 
-from domain_rand import DomainRandomizer
+from utils.domain_rand import DomainRandomizer
+from utils.world import build_model
 
-MODEL_PATH = str(Path(__file__).parent / "models" / "scene.xml")
-
-m = mujoco.MjModel.from_xml_path(MODEL_PATH)
+m = build_model()
 d = mujoco.MjData(m)
 
 DomainRandomizer(m).randomize()

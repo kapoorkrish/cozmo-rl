@@ -1,12 +1,13 @@
 import glob
 import os
+from pathlib import Path
 
 import numpy as np
 import mujoco
 from mujoco import mj_name2id
 from PIL import Image
 
-TEXTURE_DIR = "assets/textures"
+TEXTURE_DIR = str(Path(__file__).resolve().parents[1] / "assets" / "textures")
 SURFACES = ("floor", "wall")
 REPEAT = {"floor": (1.5, 5.0), "wall": (0.5, 1.5)}
 TINT = 0.08
@@ -45,7 +46,7 @@ class DomainRandomizer:
 
         if nc == 4:
             img = np.dstack([img, np.full((h, w, 1), 255, np.uint8)])
-        
+
         adr = int(m.tex_adr[tid])
         m.tex_data[adr:adr + h * w * nc] = img.reshape(-1)
 
@@ -59,7 +60,7 @@ class DomainRandomizer:
                 self._write(self.tex[k], files[rng.integers(len(files))])
                 if ctx is not None:
                     mujoco.mjr_uploadTexture(m, ctx, self.tex[k])
-            
+
             mid = self.mat[k]
             m.mat_texrepeat[mid] = rng.uniform(*REPEAT[k])
             m.mat_rgba[mid, :3] = np.clip(1 + rng.uniform(-TINT, TINT, 3), 0, 1)

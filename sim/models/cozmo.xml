@@ -36,7 +36,7 @@
       <body name="head" pos="0.0174507 0 0.022003">
         <joint name="base_to_head" pos="0 0 0" axis="0 -1 0" range="-0.44 0.78" damping="0.05"/>
         <geom type="mesh" mesh="cozmo_head" material="body_mat" mass="0.01" contype="2" conaffinity="1"/>
-        <camera name="cozmo_cam" pos="0.020813 0 -0.0071471" quat="0.5 0.5 -0.5 -0.5" fovy="45"/>
+        <camera name="cozmo_cam" pos="0.010 0 -0.0071471" quat="0.5 0.5 -0.5 -0.5" fovy="45"/>
       </body>
 
       <!-- Lift arms -->

@@ -15,7 +15,7 @@
     <light name="key" pos="0.5 0.5 1.3" dir="-0.3 -0.3 -1" diffuse="0.7 0.7 0.7"/>
     <light name="fill" pos="-0.7 0.2 1.2" dir="0.4 0 -1" diffuse="0.3 0.3 0.3" castshadow="false"/>
 
-    <!-- 2.4 x 2.4 m, 1.5 m high, 20 mm thick -->
+    <!-- 2.4 x 2.4 m, 1.5 m, 20 mm thick -->
     <geom name="floor" type="plane" size="1.2 1.2 0.05" material="floor_mat"/>
 
     <geom name="wall_px" type="box" pos="1.22 0 0.75" size="0.02 1.22 0.75" material="wall_mat"/>
@@ -23,7 +23,6 @@
     <geom name="wall_py" type="box" pos="0 1.22 0.75" size="1.22 0.02 0.75" material="wall_mat"/>
     <geom name="wall_ny" type="box" pos="0 -1.22 0.75" size="1.22 0.02 0.75" material="wall_mat"/>
 
-    <!-- Ceiling -->
     <geom name="ceiling" type="box" pos="0 0 1.52" size="1.22 1.22 0.02" material="wall_mat"/>
   </worldbody>
 </mujoco>

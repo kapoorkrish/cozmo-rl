@@ -1,23 +1,29 @@
 <mujoco model="cozmo_cube">
-  <compiler angle="radian" autolimits="true" inertiafromgeom="auto"/>
+  <compiler angle="radian" autolimits="true" inertiafromgeom="auto" meshdir="../assets/meshes" texturedir="../assets/textures"/>
 
   <default>
     <default class="cube_col">
-      <geom type="box" group="0" friction="0.8 0.005 0.0001" density="326"/>
+      <geom type="box" group="3" friction="0.8 0.005 0.0001" density="326" contype="1" conaffinity="1"/>
     </default>
   </default>
 
-  <worldbody>
-  <!-- Primitive reconstruction of Cozmo light cube
-      NOTCHES: 18 x 7 x 7
-      CORNER CAVITIES: 7 x 7 footprint, inset to 6 x 6 (1 mm skin)
-  -->
-    <body name="target_cube" pos="0.3 0.1 0.0225">
-      <freejoint name="cube_free"/>
+  <asset>
+    <mesh name="cube_mesh" content_type="model/obj" file="cube.obj" scale="0.001 0.001 0.001"/>
 
-      <!-- IMU for accelerometer sensor -->
+    <texture name="tex_cube" type="cube" file="cube/cube1.png" gridsize="3 4" gridlayout=".R..FDBU.L.."/>
+    <material name="cube_mat" texture="tex_cube" specular="0.3" shininess="0.4"/>
+  </asset>
+
+  <worldbody>
+    <body name="target_cube" pos="0 0 0.0225">
+      <freejoint name="cube_free"/>
       <site name="cube_imu" pos="0 0 0" size="0.001" group="4"/>
 
+      <!-- Visual -->
+      <geom name="cube_vis" type="mesh" mesh="cube_mesh" pos="0 0 -0.0225"
+            contype="0" conaffinity="0" mass="0" group="0" material="cube_mat"/>
+
+      <!-- Collision: primitive reconstruction, hidden (group 3) -->
       <!-- foot band: z 0.0 .. 1.0 mm from base -->
       <geom name="cc_foot_00" class="cube_col"
             size="0.009 0.0155 0.0005" pos="0 0 -0.022"/>
@@ -116,4 +122,8 @@
             size="0.0225 0.0225 0.00375" pos="0 0 0.01875"/>
     </body>
   </worldbody>
+
+  <sensor>
+    <accelerometer name="cube_accel" site="cube_imu"/>
+  </sensor>
 </mujoco>

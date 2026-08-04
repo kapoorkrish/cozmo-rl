@@ -4,12 +4,12 @@
 
   <visual>
     <global offwidth="1280" offheight="960"/>
+    <map znear="0.0004" zfar="2"/>
     <quality shadowsize="4096"/>
   </visual>
 
   <include file="room.xml"/>
   <include file="cozmo.xml"/>
-  <include file="cube.xml"/>
 
   <sensor>
     <!-- Pose and heading
@@ -24,8 +24,5 @@
     <!-- Lift and head angles -->
     <jointpos name="lift_angle" joint="right_lower_arm_joint"/>
     <jointpos name="head_angle" joint="base_to_head"/>
-
-    <!-- Cube IMU -->
-    <accelerometer name="cube_accel" site="cube_imu"/>
   </sensor>
 </mujoco>
