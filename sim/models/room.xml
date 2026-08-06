@@ -2,13 +2,13 @@
   <asset>
     <texture name="tex_floor" type="2d" builtin="checker"
              rgb1="0.35 0.30 0.25" rgb2="0.45 0.40 0.33" width="512" height="512"/>
-    <texture name="tex_wall" type="2d" builtin="flat"
-             rgb1="0.85 0.84 0.80" width="512" height="512"/>
+    <texture name="tex_wall" type="cube" builtin="flat"
+         rgb1="0.85 0.84 0.80" width="1024" height="1024"/>
 
     <material name="floor_mat" texture="tex_floor" texuniform="true" texrepeat="3 3"
               reflectance="0.05" specular="0.2" shininess="0.3"/>
-    <material name="wall_mat" texture="tex_wall" texuniform="true" texrepeat="1 1"
-              specular="0.1" shininess="0.1"/>
+    <material name="wall_mat" texture="tex_wall" texuniform="false" texrepeat="1 1"
+          specular="0.1" shininess="0.1"/>
   </asset>
 
   <worldbody>

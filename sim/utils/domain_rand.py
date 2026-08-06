@@ -4,12 +4,12 @@ from pathlib import Path
 
 import numpy as np
 import mujoco
-from mujoco import mj_name2id
-from PIL import Image
+from mujoco import mj_name2id, mj_id2name
+from PIL import Image, ImageOps
 
 TEXTURE_DIR = str(Path(__file__).resolve().parents[1] / "assets" / "textures")
 SURFACES = ("floor", "wall")
-REPEAT = {"floor": (1.5, 5.0), "wall": (0.5, 1.5)}
+REPEAT = {"floor": (4.0, 12.0), "wall": (6.0, 14.0)}
 TINT = 0.08
 
 LIGHT_ON_PROB = 0.8
@@ -20,6 +20,10 @@ AMBIENT = (0.0, 0.08)
 SHADOW_PROB = 0.6
 HEADLIGHT_AMBIENT = (0.02, 0.20)
 HEADLIGHT_DIFFUSE = (0.0, 0.25)
+
+WHEELS = ("front_left_wheel", "front_right_wheel",
+                "rear_left_wheel", "rear_right_wheel")
+FRICTION = (0.8, 1.3)
 
 
 class DomainRandomizer:
@@ -37,15 +41,25 @@ class DomainRandomizer:
         self.half = float(m.geom_size[floor, 0])
         self.height = float(m.geom_pos[ceil, 2]) if ceil >= 0 else 1.5
 
+        self.floor_geom = floor
+        self.wheel_geoms = [
+            g for g in range(m.ngeom)
+            if mj_id2name(m, mujoco.mjtObj.mjOBJ_BODY, m.geom_bodyid[g]) in WHEELS
+        ]
+
     # Textures
-    def _write(self, tid, path):
+    def _write_texture(self, tid, path):
         m = self.m
         h, w = int(m.tex_height[tid]), int(m.tex_width[tid])
         nc = int(m.tex_nchannel[tid])
-        img = np.asarray(Image.open(path).convert("RGB").resize((w, h), Image.LANCZOS), dtype=np.uint8)
+        nface = 6 if m.tex_type[tid] != mujoco.mjtTexture.mjTEXTURE_2D else 1
+        img = ImageOps.fit(Image.open(path).convert("RGB"), (w, h // nface), Image.LANCZOS)
+        img = np.asarray(img, dtype=np.uint8)
 
+        if nface > 1:
+            img = np.tile(img, (nface, 1, 1))
         if nc == 4:
-            img = np.dstack([img, np.full((h, w, 1), 255, np.uint8)])
+            img = np.dstack([img, np.full(img.shape[:2] + (1,), 255, np.uint8)])
 
         adr = int(m.tex_adr[tid])
         m.tex_data[adr:adr + h * w * nc] = img.reshape(-1)
@@ -57,7 +71,7 @@ class DomainRandomizer:
         for k in SURFACES:
             files = self.files[k]
             if files:
-                self._write(self.tex[k], files[rng.integers(len(files))])
+                self._write_texture(self.tex[k], files[rng.integers(len(files))])
                 if ctx is not None:
                     mujoco.mjr_uploadTexture(m, ctx, self.tex[k])
 
@@ -95,7 +109,17 @@ class DomainRandomizer:
         m.vis.headlight.ambient[:] = rng.uniform(*HEADLIGHT_AMBIENT)
         m.vis.headlight.diffuse[:] = rng.uniform(*HEADLIGHT_DIFFUSE)
 
+    # Friction
+    def randomize_friction(self):
+        """Randomize friction between floor and wheels"""
+        m, rng = self.m, self.rng
+        mu = rng.uniform(*FRICTION)
+
+        for g in [self.floor_geom] + self.wheel_geoms:
+            m.geom_friction[g, 0] = mu
+
     # Randomize environment
     def randomize(self, ctx=None):
         self.randomize_textures(ctx)
         self.randomize_lights()
+        self.randomize_friction()

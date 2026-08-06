@@ -12,6 +12,8 @@ d = mujoco.MjData(m)
 DomainRandomizer(m).randomize()
 
 with mujoco.viewer.launch_passive(m, d) as viewer:
+    viewer.cam.distance = 0.9
+
     while viewer.is_running():
         step_start = time.time()
 

@@ -11,6 +11,7 @@ TRACK_ELEVATION = -25.0
 TRACK_AZIMUTH = 135.0
 
 DEFAULT_CAM = "cozmo_chase"
+CAMERA_HIDE_GROUP = 1
 
 
 class Window:
@@ -59,6 +60,8 @@ class Window:
         else:
             self.cam.type = mujoco.mjtCamera.mjCAMERA_FIXED
             self.cam.fixedcamid = self.cam_idx - 1
+
+        self.opt.geomgroup[CAMERA_HIDE_GROUP] = self.cam_list[self.cam_idx] != "cozmo_cam"
 
     def _on_key(self, win, key, scancode, action, mods):
         if action == glfw.PRESS:
