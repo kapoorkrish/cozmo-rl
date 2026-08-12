@@ -10,20 +10,20 @@ SCENE = str(MODELS / "scene.xml")
 CUBE = str(MODELS / "cube.xml")
 CUBE_TEXTURES = ("cube/cube1.png", "cube/cube2.png", "cube/cube3.png")
 
-SPAWN_RADIUS = (0.15, 0.60)
+CUBE_SPAWN_RADIUS = (0.15, 0.40)
 SPAWN_GAP = 0.09
 
 
-def _spawn_points(rng, n):
+def get_spawns(rng, n, radius=CUBE_SPAWN_RADIUS):
     out = []
     while len(out) < n:
-        r, th = rng.uniform(*SPAWN_RADIUS), rng.uniform(0, 2 * np.pi)
+        r, th = rng.uniform(*radius), rng.uniform(0, 2 * np.pi)
         p = np.array([r * np.cos(th), r * np.sin(th)])
+        
         if all(np.linalg.norm(p - q) > SPAWN_GAP for q in out):
             out.append(p)
 
     return out
-
 
 def build_model(num_cubes=None, seed=None):
     """Randomly draw n cubes"""
@@ -33,7 +33,7 @@ def build_model(num_cubes=None, seed=None):
     spec = mujoco.MjSpec.from_file(SCENE)
     picks = rng.choice(len(CUBE_TEXTURES), n, replace=False)
 
-    for i, (k, pos) in enumerate(zip(picks, _spawn_points(rng, n))):
+    for i, (k, pos) in enumerate(zip(picks, get_spawns(rng, n, CUBE_SPAWN_RADIUS))):
         cube = mujoco.MjSpec.from_file(CUBE)
         cube.textures[0].file = CUBE_TEXTURES[k]
 

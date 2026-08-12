@@ -4,8 +4,7 @@ import numpy as np
 import glfw
 import mujoco
 
-CONTROL_HZ = 30.0
-DT_CTRL = 1.0 / CONTROL_HZ
+from constants import HZ
 
 WHEEL_R_MM = 13.14
 MAX_SPEED_MMPS = 200.0
@@ -26,6 +25,7 @@ def _ramp(cur, tgt, dt, scale):
     
     return cur + float(np.clip(tgt - cur, -step, step))
 
+
 class Control:
     def __init__(self, m, d):
         self.m, self.d = m, d
@@ -38,7 +38,8 @@ class Control:
         self.head_lo, self.head_hi = m.actuator_ctrlrange[self.a_head]
         self.lift_lo, self.lift_hi = m.actuator_ctrlrange[self.a_lift]
 
-        self.n_substeps = max(1, round(DT_CTRL / m.opt.timestep))
+        dt = 1 / HZ
+        self.n_substeps = max(1, round(dt / m.opt.timestep))
         self.reset()
 
     def reset(self):

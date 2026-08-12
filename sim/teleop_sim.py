@@ -14,11 +14,13 @@
 import time
 import mujoco
 
-from utils.teleop.control import Control, DT_CTRL
-from utils.teleop.window import Window
+from sim.utils.teleop.control import Control
+from sim.utils.teleop.window import Window
 
-from utils.domain_rand import DomainRandomizer
-from utils.world import build_model
+from sim.utils.domain_rand import DomainRandomizer
+from sim.utils.world import build_model
+
+from constants import HZ
 
 
 def main():
@@ -38,13 +40,13 @@ def main():
 
     while not window.should_close():
         if not window.paused:
-            control.apply(window.held, DT_CTRL)
+            control.apply(window.held, 1 / HZ)
             for _ in range(control.n_substeps):
                 mujoco.mj_step(m, d)
 
         window.render(control.status_lines())
 
-        next_wall += DT_CTRL
+        next_wall += (1 / HZ)
         slack = next_wall - time.perf_counter()
         if slack > 0:
             time.sleep(slack)

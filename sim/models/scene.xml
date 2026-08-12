@@ -14,8 +14,8 @@
   <sensor>
     <!-- Pose and heading
     When level, heading is [cos yaw, sin yaw, 0] -->
-    <framepos name="pose" objtype="body" objname="cozmo"/>
-    <framexaxis name="pose_xaxis" objtype="body" objname="cozmo"/>
+    <framepos name="pose" objtype="xbody" objname="cozmo"/>
+    <framexaxis name="pose_xaxis" objtype="xbody" objname="cozmo"/>
 
     <!-- Wheel speeds -->
     <jointvel name="lwheel_speed" joint="front_left_wheel_joint"/>

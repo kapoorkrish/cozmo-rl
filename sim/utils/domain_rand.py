@@ -21,8 +21,7 @@ SHADOW_PROB = 0.6
 HEADLIGHT_AMBIENT = (0.02, 0.20)
 HEADLIGHT_DIFFUSE = (0.0, 0.25)
 
-WHEELS = ("front_left_wheel", "front_right_wheel",
-                "rear_left_wheel", "rear_right_wheel")
+WHEELS = ("front_left_wheel", "front_right_wheel", "rear_left_wheel", "rear_right_wheel")
 FRICTION = (0.8, 1.3)
 
 
