@@ -11,7 +11,6 @@ TRACK_ELEVATION = -25.0
 TRACK_AZIMUTH = 135.0
 
 DEFAULT_CAM = "cozmo_chase"
-CAMERA_HIDE_GROUP = 1
 
 
 class Window:
@@ -32,6 +31,7 @@ class Window:
         mujoco.mjv_defaultCamera(self.cam)
         mujoco.mjv_defaultOption(self.option)
         self.scene = mujoco.MjvScene(model, maxgeom=10000)
+
         # Simplify graphics for teleop window performance
         self.scene.flags[mujoco.mjtRndFlag.mjRND_SHADOW] = 0
         self.scene.flags[mujoco.mjtRndFlag.mjRND_REFLECTION] = 0
@@ -67,7 +67,8 @@ class Window:
             self.cam.type = mujoco.mjtCamera.mjCAMERA_FIXED
             self.cam.fixedcamid = self.cam_idx - 1
 
-        self.option.geomgroup[CAMERA_HIDE_GROUP] = self.cam_list[self.cam_idx] != "cozmo_cam"
+        # Hide Cozmo head from obstructing its camera
+        self.option.geomgroup[1] = self.cam_list[self.cam_idx] != "cozmo_cam"
 
     def _on_key(self, win, key, scancode, action, mods):
         if action == glfw.PRESS:

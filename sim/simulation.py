@@ -22,6 +22,10 @@ class CozmoSim:
         self.model = build_model(num_cubes=num_cubes)
         self.data = mujoco.MjData(self.model)
 
+        # Hide Cozmo head from obstructing its camera
+        self.cam_option = mujoco.MjvOption()
+        self.cam_option.geomgroup[1] = 0
+
         self.renderer = mujoco.Renderer(self.model, VISION_DIM[1], VISION_DIM[2])
         self.video_renderer = None
 
@@ -42,7 +46,7 @@ class CozmoSim:
 
     def _push_frame(self) -> None:
         """Render Cozmo's camera into the frame stack."""
-        self.renderer.update_scene(self.data, camera="cozmo_cam")
+        self.renderer.update_scene(self.data, camera="cozmo_cam", scene_option=self.cam_option)
         grayscale = (rgb2gray(self.renderer.render()) * 255).astype(np.uint8)
         self.frames.append(grayscale)
 
