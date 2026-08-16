@@ -15,39 +15,45 @@ CAMERA_HIDE_GROUP = 1
 
 
 class Window:
-    def __init__(self, m, d):
-        self.m, self.d = m, d
+    def __init__(self, model, data, on_reset=lambda: None):
+        self.model, self.data = model, data
+        self.on_reset = on_reset
 
         if not glfw.init():
             raise RuntimeError("GLFW init failed")
 
-        self.win = glfw.create_window(WIDTH, HEIGHT, TITLE, None, None)
-        glfw.make_context_current(self.win)
+        glfw.default_window_hints()
+        self.window = glfw.create_window(WIDTH, HEIGHT, TITLE, None, None)
+        glfw.make_context_current(self.window)
         glfw.swap_interval(0)
 
         self.cam = mujoco.MjvCamera()
-        self.opt = mujoco.MjvOption()
+        self.option = mujoco.MjvOption()
         mujoco.mjv_defaultCamera(self.cam)
-        mujoco.mjv_defaultOption(self.opt)
-        self.scn = mujoco.MjvScene(m, maxgeom=10000)
-        self.ctx = mujoco.MjrContext(m, mujoco.mjtFontScale.mjFONTSCALE_150)
+        mujoco.mjv_defaultOption(self.option)
+        self.scene = mujoco.MjvScene(model, maxgeom=10000)
+        # Simplify graphics for teleop window performance
+        self.scene.flags[mujoco.mjtRndFlag.mjRND_SHADOW] = 0
+        self.scene.flags[mujoco.mjtRndFlag.mjRND_REFLECTION] = 0
+        self.mjr_context = mujoco.MjrContext(model, mujoco.mjtFontScale.mjFONTSCALE_150)
 
-        self.track_body = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_BODY, "cozmo")
+        self.track_body = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "cozmo")
 
         # Tracking and all defined <camera>
         self.cam_list = ["track"] + [
-            mujoco.mj_id2name(m, mujoco.mjtObj.mjOBJ_CAMERA, i) or f"cam{i}"
-            for i in range(m.ncam)
+            mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_CAMERA, i) or f"cam{i}"
+            for i in range(model.ncam)
         ]
         self.cam_idx = 0
         self.set_cam(self.cam_list.index(DEFAULT_CAM) if DEFAULT_CAM in self.cam_list else 0)
 
         self.held = set()
         self.paused = False
-        self.on_reset = None
-        self.on_randomize = None
 
-        glfw.set_key_callback(self.win, self._on_key)
+        glfw.set_key_callback(self.window, self._on_key)
+
+    def make_current(self):
+        glfw.make_context_current(self.window)
 
     def set_cam(self, i):
         self.cam_idx = i % len(self.cam_list)
@@ -61,44 +67,43 @@ class Window:
             self.cam.type = mujoco.mjtCamera.mjCAMERA_FIXED
             self.cam.fixedcamid = self.cam_idx - 1
 
-        self.opt.geomgroup[CAMERA_HIDE_GROUP] = self.cam_list[self.cam_idx] != "cozmo_cam"
+        self.option.geomgroup[CAMERA_HIDE_GROUP] = self.cam_list[self.cam_idx] != "cozmo_cam"
 
     def _on_key(self, win, key, scancode, action, mods):
         if action == glfw.PRESS:
             self.held.add(key)
+            
             if key == glfw.KEY_ESCAPE:
                 glfw.set_window_should_close(win, True)
             elif key == glfw.KEY_SPACE:
                 self.paused = not self.paused
             elif key == glfw.KEY_R:
-                if self.on_reset:
-                    self.on_reset()
-            elif key == glfw.KEY_T:
-                if self.on_randomize:
-                    self.on_randomize()
+                self.on_reset() 
             elif key == glfw.KEY_RIGHT_BRACKET:
                 self.set_cam(self.cam_idx + 1)
             elif key == glfw.KEY_LEFT_BRACKET:
                 self.set_cam(self.cam_idx - 1)
+        
         elif action == glfw.RELEASE:
             self.held.discard(key)
 
     def should_close(self):
-        return glfw.window_should_close(self.win)
+        return glfw.window_should_close(self.window)
 
     def render(self, status_lines=()):
-        fw, fh = glfw.get_framebuffer_size(self.win)
+        glfw.make_context_current(self.window)
+        fw, fh = glfw.get_framebuffer_size(self.window)
         viewport = mujoco.MjrRect(0, 0, fw, fh)
-        mujoco.mjv_updateScene(self.m, self.d, self.opt, None, self.cam, mujoco.mjtCatBit.mjCAT_ALL, self.scn)
-        mujoco.mjr_render(viewport, self.scn, self.ctx)
+        mujoco.mjv_updateScene(self.model, self.data, self.option, None, self.cam, mujoco.mjtCatBit.mjCAT_ALL, self.scene)
+        mujoco.mjr_render(viewport, self.scene, self.mjr_context)
 
         lines = list(status_lines) + [f"Camera  {self.cam_list[self.cam_idx]}"]
         if self.paused:
             lines.append("PAUSED")
         mujoco.mjr_overlay(mujoco.mjtFont.mjFONT_NORMAL, mujoco.mjtGridPos.mjGRID_TOPLEFT,
-                           viewport, "\n".join(lines), "", self.ctx)
+                           viewport, "\n".join(lines), "", self.mjr_context)
 
-        glfw.swap_buffers(self.win)
+        glfw.swap_buffers(self.window)
         glfw.poll_events()
 
     def close(self):

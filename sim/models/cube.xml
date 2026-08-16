@@ -10,18 +10,22 @@
   <asset>
     <mesh name="cube_mesh" content_type="model/obj" file="cube.obj" scale="0.001 0.001 0.001"/>
 
-    <texture name="tex_cube" type="cube" file="cube/cube1.png" gridsize="3 4" gridlayout=".R..FDBU.L.."/>
-    <material name="cube_mat" texture="tex_cube" specular="0.3" shininess="0.4"/>
+    <texture name="cube1_texture" type="cube" file="cube/cube1.png" gridsize="3 4" gridlayout=".R..FDBU.L.."/>
+    <texture name="cube2_texture" type="cube" file="cube/cube2.png" gridsize="3 4" gridlayout=".R..FDBU.L.."/>
+    <texture name="cube3_texture" type="cube" file="cube/cube3.png" gridsize="3 4" gridlayout=".R..FDBU.L.."/>
+    <material name="cube1_material" texture="cube1_texture" specular="0.3" shininess="0.4"/>
+    <material name="cube2_material" texture="cube2_texture" specular="0.3" shininess="0.4"/>
+    <material name="cube3_material" texture="cube3_texture" specular="0.3" shininess="0.4"/>
   </asset>
 
   <worldbody>
-    <body name="target_cube" pos="0 0 0.0225">
-      <freejoint name="cube_free"/>
+    <body name="cube" pos="0 0 0.0225">
+      <freejoint name="cube_joint"/>
       <site name="cube_imu" pos="0 0 0" size="0.001" group="4"/>
 
       <!-- Visual -->
-      <geom name="cube_vis" type="mesh" mesh="cube_mesh" pos="0 0 -0.0225"
-            contype="0" conaffinity="0" mass="0" group="0" material="cube_mat"/>
+      <geom name="cube_visual" type="mesh" mesh="cube_mesh" pos="0 0 -0.0225"
+            contype="0" conaffinity="0" mass="0" group="0" material="cube1_material"/>
 
       <!-- Collision: primitive reconstruction, hidden (group 3) -->
       <!-- foot band: z 0.0 .. 1.0 mm from base -->

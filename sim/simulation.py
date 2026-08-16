@@ -2,11 +2,12 @@ import mujoco
 
 import math
 import numpy as np
+from collections import deque
 from skimage.color import rgb2gray
 
 from sim.utils.domain_rand import DomainRandomizer
-from sim.utils.world import build_model, get_spawns
-from constants import HZ
+from sim.utils.world import build_model
+from constants import HZ, VISION_DIM
 
 ACTUATORS = ("left_front_motor", "right_front_motor", "lift_motor", "head_motor")
 STATE_FIELDS = ("pose_x", "pose_y", "pose_angle",
@@ -15,42 +16,54 @@ STATE_FIELDS = ("pose_x", "pose_y", "pose_angle",
 
 
 class CozmoSim:
-    def __init__(self, num_cubes=1, target=1, seed=None, width=320, height=240):
-        self.model = build_model(num_cubes=num_cubes, seed=seed)
+    """Serves as an API to interact with mujoco simulation."""
+
+    def __init__(self, num_cubes=1, target=1, seed=None):
+        self.model = build_model(num_cubes=num_cubes)
         self.data = mujoco.MjData(self.model)
-        self.randomizer = DomainRandomizer(self.model, seed=seed)
-        self.renderer = mujoco.Renderer(self.model, height, width)
+
+        self.renderer = mujoco.Renderer(self.model, VISION_DIM[1], VISION_DIM[2])
+        self.video_renderer = None
+
+        self.randomizer = DomainRandomizer(self.model, self.data,
+                                           [(self.renderer._gl_context, self.renderer._mjr_context)],
+                                           seed=seed)
         self.rng = np.random.default_rng(seed)
 
         self.target = f"c{target}_"
         self.cube_joints = [f"c{i + 1}_cube_free" for i in range(num_cubes)]
 
         self.act_ids = np.array([self.model.actuator(n).id for n in ACTUATORS])
-        self.wall_geoms = {
-            g for g in range(self.model.ngeom)
-            if (mujoco.mj_id2name(self.model, mujoco.mjtObj.mjOBJ_GEOM, g) or "").startswith("wall_")
-        }
 
         self.substeps = max(1, round(1.0 / (HZ * self.model.opt.timestep)))
         self.step_count = 0
 
+        self.frames = deque(maxlen=VISION_DIM[0])
+
+    def _push_frame(self) -> None:
+        """Render Cozmo's camera into the frame stack."""
+        self.renderer.update_scene(self.data, camera="cozmo_cam")
+        grayscale = (rgb2gray(self.renderer.render()) * 255).astype(np.uint8)
+        self.frames.append(grayscale)
+
+        # Push frame copies until stack is full
+        while len(self.frames) < self.frames.maxlen:
+            self.frames.append(self.frames[-1])
+
+    def add_context(self, gl_context, mjr_context) -> None:
+        """Register a context to receive randomized textures (used for teleop & video rendering)."""
+        self.randomizer.contexts.append((gl_context, mjr_context))
+
     def reset(self) -> None:
-        self.renderer._gl_context.make_current()
-        self.randomizer.randomize(self.renderer._mjr_context)
+        """Reset mujoco sim with new randomization."""
         mujoco.mj_resetData(self.model, self.data)
-
-        # Randomize spawns and orientations of cubes and cozmo
-        cozmo_radius = (0.0, 0.20)
-        spawns = get_spawns(self.rng, 1, cozmo_radius) + get_spawns(self.rng, len(self.cube_joints))
-
-        for name, pos in zip(("root", *self.cube_joints), spawns):
-            yaw = self.rng.uniform(0, 2 * np.pi)
-            qpos = self.data.joint(name).qpos
-            qpos[0:2] = pos
-            qpos[3:7] = [math.cos(yaw / 2), 0.0, 0.0, math.sin(yaw / 2)]
+        self.randomizer.randomize()
 
         mujoco.mj_forward(self.model, self.data)
         self.step_count = 0
+
+        self.frames.clear()
+        self._push_frame()
 
     def apply(self, action: np.ndarray):
         """Apply action vector to sim."""
@@ -60,8 +73,9 @@ class CozmoSim:
         """Take substeps according to refresh rate, equating to one timestep."""
         for _ in range(self.substeps):
             mujoco.mj_step(self.model, self.data)
-
+        
         self.step_count += 1
+        self._push_frame()
 
     def get_state(self) -> np.ndarray:
         """State observation vector: \n
@@ -90,21 +104,15 @@ class CozmoSim:
             dtype=np.float32
         )
 
-    def get_frame(self) -> np.ndarray:
-        """Get grayscale image observation from Cozmo's camera"""
-        self.renderer.update_scene(self.data, camera="cozmo_cam")
-        rgb = self.renderer.render()
-        return (rgb2gray(rgb) * 255).astype(np.uint8)
+    def get_frames(self) -> np.ndarray:
+        """Stacked grayscale vision observation, oldest to newest."""
+        return np.stack(self.frames)
 
     def get_video_frame(self) -> np.ndarray:
         """Get RGB 3rd person image for rendering video"""
-        self.renderer.update_scene(self.data, camera="cozmo_chase")
-        return self.renderer.render()
-
-    def did_hit_wall(self) -> bool:
-        """Whether any collision occurred with the wall."""
-        return any(
-            self.data.contact[i].geom1 in self.wall_geoms
-            or self.data.contact[i].geom2 in self.wall_geoms
-            for i in range(self.data.ncon)
-        )
+        if self.video_renderer is None:
+            self.video_renderer = mujoco.Renderer(self.model, 240, 320)
+            self.add_context(self.video_renderer._gl_context, self.video_renderer._mjr_context)
+        
+        self.video_renderer.update_scene(self.data, camera="cozmo_chase")
+        return self.video_renderer.render()

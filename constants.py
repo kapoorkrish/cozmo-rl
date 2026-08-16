@@ -23,4 +23,10 @@ STATE_MAX = np.array(
      4.1, 4.1, 4.1]
 )
 # Stack x height x width
-VISION_DIM = (3, 60, 80)
+VISION_DOWNSAMPLE = 4
+VISION_DIM = (3, 240 // VISION_DOWNSAMPLE, 320 // VISION_DOWNSAMPLE)
+
+# Spawn randomization
+COZMO_SPAWN_RADIUS = (0.0, 0.15)
+CUBE_SPAWN_RADIUS = (0.20, 0.40)
+SPAWN_GAP = 0.09

@@ -3,7 +3,7 @@ import numpy as np
 import pycozmo
 from stable_baselines3 import PPO
 
-from hardware.utils.observer import Observer
+from hardware.utils.observer import CozmoObserver
 from train.tasks.drive_straight import DriveStraight
 from constants import HZ
 
@@ -27,7 +27,7 @@ def _apply_action(cli, action) -> None:
 
 
 model = PPO.load(MODEL)
-observer = Observer()
+observer = CozmoObserver()
 
 with pycozmo.connect() as cli:  # type: ignore
     cli.add_handler(pycozmo.protocol_encoder.RobotState, observer._on_robot_state)

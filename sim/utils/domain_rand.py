@@ -1,13 +1,14 @@
 import glob
 import os
-from pathlib import Path
 
 import numpy as np
 import mujoco
 from mujoco import mj_name2id, mj_id2name
 from PIL import Image, ImageOps
 
-TEXTURE_DIR = str(Path(__file__).resolve().parents[1] / "assets" / "textures")
+from constants import COZMO_SPAWN_RADIUS, CUBE_SPAWN_RADIUS, SPAWN_GAP
+
+TEXTURE_DIR = "./sim/assets/textures"
 SURFACES = ("floor", "wall")
 REPEAT = {"floor": (4.0, 12.0), "wall": (6.0, 14.0)}
 TINT = 0.08
@@ -26,32 +27,43 @@ FRICTION = (0.8, 1.3)
 
 
 class DomainRandomizer:
-    def __init__(self, m, seed=None):
-        self.m = m
+    def __init__(self, model, data, contexts=(), seed=None):
+        self.model = model
+        self.data = data
         self.rng = np.random.default_rng(seed)
+        self.contexts = list(contexts)
 
-        self.tex = {k: mj_name2id(m, mujoco.mjtObj.mjOBJ_TEXTURE, f"tex_{k}") for k in SURFACES}
-        self.mat = {k: mj_name2id(m, mujoco.mjtObj.mjOBJ_MATERIAL, f"{k}_mat") for k in SURFACES}
-        self.files = {k: sorted(glob.glob(os.path.join(TEXTURE_DIR, k, "*.png"))) for k in SURFACES}
+        joint_names = [mj_id2name(model, mujoco.mjtObj.mjOBJ_JOINT, i) for i in range(model.njnt)]
+        self.cube_joints = sorted(n for n in joint_names if n and n.endswith("_cube_joint"))
 
-        floor = mj_name2id(m, mujoco.mjtObj.mjOBJ_GEOM, "floor")
-        ceil = mj_name2id(m, mujoco.mjtObj.mjOBJ_GEOM, "ceiling")
+        self.textures = {k: mj_name2id(model, mujoco.mjtObj.mjOBJ_TEXTURE, f"{k}_texture") for k in SURFACES}
+        self.materials = {k: mj_name2id(model, mujoco.mjtObj.mjOBJ_MATERIAL, f"{k}_material") for k in SURFACES}
+        self.surface_files = {k: sorted(glob.glob(os.path.join(TEXTURE_DIR, k, "*.png"))) for k in SURFACES}
 
-        self.half = float(m.geom_size[floor, 0])
-        self.height = float(m.geom_pos[ceil, 2]) if ceil >= 0 else 1.5
+        floor = mj_name2id(model, mujoco.mjtObj.mjOBJ_GEOM, "floor")
+        ceil = mj_name2id(model, mujoco.mjtObj.mjOBJ_GEOM, "ceiling")
+
+        self.half = float(model.geom_size[floor, 0])
+        self.height = float(model.geom_pos[ceil, 2]) if ceil >= 0 else 1.5
 
         self.floor_geom = floor
         self.wheel_geoms = [
-            g for g in range(m.ngeom)
-            if mj_id2name(m, mujoco.mjtObj.mjOBJ_BODY, m.geom_bodyid[g]) in WHEELS
+            g for g in range(model.ngeom)
+            if mj_id2name(model, mujoco.mjtObj.mjOBJ_BODY, model.geom_bodyid[g]) in WHEELS
         ]
 
+        self.cube_geoms = [mj_name2id(model, mujoco.mjtObj.mjOBJ_GEOM, f"c{i + 1}_cube_visual")
+                           for i in range(len(self.cube_joints))]
+        self.cube_mats = [[mj_name2id(model, mujoco.mjtObj.mjOBJ_MATERIAL, f"c{i + 1}_cube{j + 1}_material")
+                           for j in range(3)] for i in range(len(self.cube_joints))]
+
     # Textures
-    def _write_texture(self, tid, path):
-        m = self.m
-        h, w = int(m.tex_height[tid]), int(m.tex_width[tid])
-        nc = int(m.tex_nchannel[tid])
-        nface = 6 if m.tex_type[tid] != mujoco.mjtTexture.mjTEXTURE_2D else 1
+    def _set_texture(self, tid, path):
+        """Load image into model texture and push to all contexts."""
+        model = self.model
+        h, w = int(model.tex_height[tid]), int(model.tex_width[tid])
+        nc = int(model.tex_nchannel[tid])
+        nface = 6 if model.tex_type[tid] != mujoco.mjtTexture.mjTEXTURE_2D else 1
         img = ImageOps.fit(Image.open(path).convert("RGB"), (w, h // nface), Image.LANCZOS)
         img = np.asarray(img, dtype=np.uint8)
 
@@ -60,65 +72,98 @@ class DomainRandomizer:
         if nc == 4:
             img = np.dstack([img, np.full(img.shape[:2] + (1,), 255, np.uint8)])
 
-        adr = int(m.tex_adr[tid])
-        m.tex_data[adr:adr + h * w * nc] = img.reshape(-1)
+        adr = int(model.tex_adr[tid])
+        model.tex_data[adr:adr + h * w * nc] = img.reshape(-1)
 
-    def randomize_textures(self, ctx=None):
-        """Pick a random texture per surface"""
-        m, rng = self.m, self.rng
+        # Upload texture to all contexts
+        for gl, mjr in self.contexts:
+            gl.make_current()
+            mujoco.mjr_uploadTexture(model, mjr, tid)
 
+    def randomize_textures(self):
+        """Pick a random texture per surface and distinct design per cube."""
+        model, rng = self.model, self.rng
+
+        # Floor and walls
         for k in SURFACES:
-            files = self.files[k]
+            files = self.surface_files[k]
             if files:
-                self._write_texture(self.tex[k], files[rng.integers(len(files))])
-                if ctx is not None:
-                    mujoco.mjr_uploadTexture(m, ctx, self.tex[k])
+                self._set_texture(self.textures[k], files[rng.integers(len(files))])
 
-            mid = self.mat[k]
-            m.mat_texrepeat[mid] = rng.uniform(*REPEAT[k])
-            m.mat_rgba[mid, :3] = np.clip(1 + rng.uniform(-TINT, TINT, 3), 0, 1)
+            mid = self.materials[k]
+            model.mat_texrepeat[mid] = rng.uniform(*REPEAT[k])
+            model.mat_rgba[mid, :3] = np.clip(1 + rng.uniform(-TINT, TINT, 3), 0, 1)
+
+        # Cubes
+        picks = rng.choice(3, len(self.cube_geoms), replace=False)
+        for gid, mats, j in zip(self.cube_geoms, self.cube_mats, picks):
+            model.geom_matid[gid] = mats[j]
 
     # Lighting
     def randomize_lights(self):
-        """Move, recolor, and toggle every light"""
-        m, rng = self.m, self.rng
+        """Move, recolor, and toggle every light."""
+        model, rng = self.model, self.rng
         L, H = self.half, self.height
 
-        on = rng.random(m.nlight) < LIGHT_ON_PROB
+        on = rng.random(model.nlight) < LIGHT_ON_PROB
         if not on.any():
-            on[rng.integers(m.nlight)] = True
+            on[rng.integers(model.nlight)] = True
 
-        for i in range(m.nlight):
-            m.light_active[i] = bool(on[i])
+        for i in range(model.nlight):
+            model.light_active[i] = bool(on[i])
             if not on[i]:
                 continue
 
             pos = np.array([rng.uniform(-L, L), rng.uniform(-L, L), rng.uniform(0.5 * H, 0.9 * H)])
             aim = np.array([rng.uniform(-L, L), rng.uniform(-L, L), 0.0]) - pos
-            m.light_pos[i] = pos
-            m.light_dir[i] = aim / np.linalg.norm(aim)
+            model.light_pos[i] = pos
+            model.light_dir[i] = aim / np.linalg.norm(aim)
 
             w = rng.uniform(-WARMTH, WARMTH)
 
-            m.light_diffuse[i] = np.clip(rng.uniform(*BRIGHTNESS) * np.array([1 + w, 1.0, 1 - w]), 0, 1)
-            m.light_specular[i] = rng.uniform(*SPECULAR)
-            m.light_ambient[i] = rng.uniform(*AMBIENT)
-            m.light_castshadow[i] = bool(rng.random() < SHADOW_PROB)
+            model.light_diffuse[i] = np.clip(rng.uniform(*BRIGHTNESS) * np.array([1 + w, 1.0, 1 - w]), 0, 1)
+            model.light_specular[i] = rng.uniform(*SPECULAR)
+            model.light_ambient[i] = rng.uniform(*AMBIENT)
+            model.light_castshadow[i] = bool(rng.random() < SHADOW_PROB)
 
-        m.vis.headlight.ambient[:] = rng.uniform(*HEADLIGHT_AMBIENT)
-        m.vis.headlight.diffuse[:] = rng.uniform(*HEADLIGHT_DIFFUSE)
+        model.vis.headlight.ambient[:] = rng.uniform(*HEADLIGHT_AMBIENT)
+        model.vis.headlight.diffuse[:] = rng.uniform(*HEADLIGHT_DIFFUSE)
 
     # Friction
     def randomize_friction(self):
-        """Randomize friction between floor and wheels"""
-        m, rng = self.m, self.rng
-        mu = rng.uniform(*FRICTION)
+        """Randomize friction between floor and wheels."""
+        mu = self.rng.uniform(*FRICTION)
 
         for g in [self.floor_geom] + self.wheel_geoms:
-            m.geom_friction[g, 0] = mu
+            self.model.geom_friction[g, 0] = mu
+
+    # Spawn locations and orientations
+    def _get_spawns(self, n, radius):
+        out = []
+        while len(out) < n:
+            r, th = self.rng.uniform(*radius), self.rng.uniform(0, 2 * np.pi)
+            p = np.array([r * np.cos(th), r * np.sin(th)])
+            
+            if all(np.linalg.norm(p - q) > SPAWN_GAP for q in out):
+                out.append(p)
+
+        return out
+
+    def randomize_spawns(self):
+        """Randomize positions and orientations of cozmo and cubes."""
+        rng = self.rng
+        spawns = (self._get_spawns(1, COZMO_SPAWN_RADIUS)
+                  + self._get_spawns(len(self.cube_joints), CUBE_SPAWN_RADIUS))
+
+        for name, pos in zip(("root", *self.cube_joints), spawns):
+            yaw = rng.uniform(0, 2 * np.pi)
+            qpos = self.data.joint(name).qpos
+            qpos[0:2] = pos
+            qpos[3:7] = [np.cos(yaw / 2), 0.0, 0.0, np.sin(yaw / 2)]
 
     # Randomize environment
-    def randomize(self, ctx=None):
-        self.randomize_textures(ctx)
+    def randomize(self):
+        self.randomize_textures()
         self.randomize_lights()
         self.randomize_friction()
+        self.randomize_spawns()

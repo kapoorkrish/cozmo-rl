@@ -17,7 +17,7 @@ def _lift_mm_to_rad(mm):
     return np.arcsin((lift_h_clipped - pivot_h) / lift_arm_len)
 
 
-class Observer:
+class CozmoObserver:
     def __init__(self):
         self.lock = threading.Lock()
         self.robot_state = None

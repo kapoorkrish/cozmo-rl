@@ -3,9 +3,9 @@
   <option timestep="0.001" gravity="0 0 -9.81" integrator="implicitfast"/>
 
   <visual>
-    <global offwidth="1280" offheight="960"/>
+    <global offwidth="320" offheight="240"/>
     <map znear="0.0004" zfar="2"/>
-    <quality shadowsize="4096"/>
+    <quality shadowsize="2048"/>
   </visual>
 
   <include file="room.xml"/>

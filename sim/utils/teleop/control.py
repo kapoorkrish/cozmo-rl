@@ -27,32 +27,28 @@ def _ramp(cur, tgt, dt, scale):
 
 
 class Control:
-    def __init__(self, m, d):
-        self.m, self.d = m, d
+    def __init__(self, model, data):
+        self.model, self.data = model, data
 
-        self.a_lwheel = _actuator_id(m, "left_front_motor")
-        self.a_rwheel = _actuator_id(m, "right_front_motor")
-        self.a_head = _actuator_id(m, "head_motor")
-        self.a_lift = _actuator_id(m, "lift_motor")
+        self.a_lwheel = _actuator_id(model, "left_front_motor")
+        self.a_rwheel = _actuator_id(model, "right_front_motor")
+        self.a_head = _actuator_id(model, "head_motor")
+        self.a_lift = _actuator_id(model, "lift_motor")
 
-        self.head_lo, self.head_hi = m.actuator_ctrlrange[self.a_head]
-        self.lift_lo, self.lift_hi = m.actuator_ctrlrange[self.a_lift]
+        self.head_lo, self.head_hi = model.actuator_ctrlrange[self.a_head]
+        self.lift_lo, self.lift_hi = model.actuator_ctrlrange[self.a_lift]
 
         dt = 1 / HZ
-        self.n_substeps = max(1, round(dt / m.opt.timestep))
+        self.n_substeps = max(1, round(dt / model.opt.timestep))
         self.reset()
 
     def reset(self):
-        mujoco.mj_resetData(self.m, self.d)
-        mujoco.mj_forward(self.m, self.d)
-
         self.v_cur = self.w_cur = 0.0
         self.head_tgt = self.lift_tgt = 0.0
         self.left = self.right = 0.0
-        self.d.ctrl[:] = 0.0
+        self.data.ctrl[:] = 0.0
 
     def apply(self, held, dt):
-        d = self.d
         scale = PRECISION_SCALE if glfw.KEY_LEFT_SHIFT in held else 1.0
 
         v_target = ((glfw.KEY_W in held) - (glfw.KEY_S in held)) * MAX_SPEED_MMPS * scale
@@ -69,8 +65,8 @@ class Control:
         
         self.left, self.right = left, right
 
-        d.ctrl[self.a_lwheel] = left / WHEEL_R_MM
-        d.ctrl[self.a_rwheel] = right / WHEEL_R_MM
+        self.data.ctrl[self.a_lwheel] = left / WHEEL_R_MM
+        self.data.ctrl[self.a_rwheel] = right / WHEEL_R_MM
 
         dh = ((glfw.KEY_UP in held) - (glfw.KEY_DOWN in held)) * HEAD_RATE * scale * dt
         dl = ((glfw.KEY_RIGHT in held) - (glfw.KEY_LEFT in held)) * LIFT_RATE * scale * dt
@@ -78,8 +74,8 @@ class Control:
         self.head_tgt = float(np.clip(self.head_tgt + dh, self.head_lo, self.head_hi))
         self.lift_tgt = float(np.clip(self.lift_tgt + dl, self.lift_lo, self.lift_hi))
 
-        d.ctrl[self.a_head] = self.head_tgt
-        d.ctrl[self.a_lift] = self.lift_tgt
+        self.data.ctrl[self.a_head] = self.head_tgt
+        self.data.ctrl[self.a_lift] = self.lift_tgt
 
     def status_lines(self):
         return [

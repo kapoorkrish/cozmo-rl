@@ -1,10 +1,10 @@
 import pycozmo
 import time
 
-from hardware.utils.observer import Observer
+from hardware.utils.observer import CozmoObserver
 from constants import HZ
 
-observer = Observer()
+observer = CozmoObserver()
 
 with pycozmo.connect() as cli: # type: ignore
     cli.add_handler(pycozmo.protocol_encoder.RobotState, observer._on_robot_state)

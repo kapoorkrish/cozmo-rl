@@ -1,14 +1,14 @@
 <mujoco model="room">
   <asset>
-    <texture name="tex_floor" type="2d" builtin="checker"
+    <texture name="floor_texture" type="2d" builtin="checker"
              rgb1="0.35 0.30 0.25" rgb2="0.45 0.40 0.33" width="512" height="512"/>
-    <texture name="tex_wall" type="cube" builtin="flat"
-         rgb1="0.85 0.84 0.80" width="1024" height="1024"/>
+    <texture name="wall_texture" type="cube" builtin="flat"
+             rgb1="0.85 0.84 0.80" width="1024" height="1024"/>
 
-    <material name="floor_mat" texture="tex_floor" texuniform="true" texrepeat="3 3"
-              reflectance="0.05" specular="0.2" shininess="0.3"/>
-    <material name="wall_mat" texture="tex_wall" texuniform="false" texrepeat="1 1"
-          specular="0.1" shininess="0.1"/>
+    <material name="floor_material" texture="floor_texture" texuniform="true" texrepeat="3 3"
+              specular="0.2" shininess="0.3"/>
+    <material name="wall_material" texture="wall_texture" texuniform="false" texrepeat="1 1"
+              specular="0.1" shininess="0.1"/>
   </asset>
 
   <worldbody>
@@ -16,13 +16,13 @@
     <light name="fill" pos="-0.7 0.2 1.2" dir="0.4 0 -1" diffuse="0.3 0.3 0.3" castshadow="false"/>
 
     <!-- 2.4 x 2.4 m, 1.5 m, 20 mm thick -->
-    <geom name="floor" type="plane" size="1.2 1.2 0.05" material="floor_mat"/>
+    <geom name="floor" type="plane" size="1.2 1.2 0.05" material="floor_material"/>
 
-    <geom name="wall_px" type="box" pos="1.22 0 0.75" size="0.02 1.22 0.75" material="wall_mat"/>
-    <geom name="wall_nx" type="box" pos="-1.22 0 0.75" size="0.02 1.22 0.75" material="wall_mat"/>
-    <geom name="wall_py" type="box" pos="0 1.22 0.75" size="1.22 0.02 0.75" material="wall_mat"/>
-    <geom name="wall_ny" type="box" pos="0 -1.22 0.75" size="1.22 0.02 0.75" material="wall_mat"/>
+    <geom name="wall_px" type="box" pos="1.22 0 0.75" size="0.02 1.22 0.75" material="wall_material"/>
+    <geom name="wall_nx" type="box" pos="-1.22 0 0.75" size="0.02 1.22 0.75" material="wall_material"/>
+    <geom name="wall_py" type="box" pos="0 1.22 0.75" size="1.22 0.02 0.75" material="wall_material"/>
+    <geom name="wall_ny" type="box" pos="0 -1.22 0.75" size="1.22 0.02 0.75" material="wall_material"/>
 
-    <geom name="ceiling" type="box" pos="0 0 1.52" size="1.22 1.22 0.02" material="wall_mat"/>
+    <geom name="ceiling" type="box" pos="0 0 1.52" size="1.22 1.22 0.02" material="wall_material"/>
   </worldbody>
 </mujoco>
