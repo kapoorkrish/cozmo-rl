@@ -5,15 +5,17 @@ import time
 
 from sim.simulation import CozmoSim
 from train.utils.environment import CozmoEnv
-from train.tasks.drive_straight import DriveStraight
-from constants import HZ
 
-MODEL = "./models/checkpoints/drive_straight_ppo_100000_steps"
+from config import TASK
+from utils import HZ
+
+MODEL = f"./models/bc/{TASK!s}"
 NUM_EPISODES = 5
 
 
 model = PPO.load(MODEL)
-env = CozmoEnv(CozmoSim(), DriveStraight())
+env = CozmoEnv(CozmoSim(), TASK)
+env.sim.reset()
 
 with mujoco.viewer.launch_passive(env.sim.model, env.sim.data) as viewer:
     viewer.cam.distance = 0.9
@@ -30,7 +32,6 @@ with mujoco.viewer.launch_passive(env.sim.model, env.sim.data) as viewer:
             total += reward
             done = terminated or truncated
 
-            print(obs)
             viewer.sync()
             time.sleep(max(0.0, (1 / HZ) - (time.perf_counter() - start)))
 

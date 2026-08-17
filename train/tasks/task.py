@@ -1,9 +1,15 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from typing import final
+from typing import TYPE_CHECKING, final
 
 import numpy as np
+import re
 
-from constants import ACTION_MIN, ACTION_MAX
+from utils import ACTION_MIN, ACTION_MAX
+
+if TYPE_CHECKING:
+    from sim.simulation import CozmoSim
 
 
 class Task(ABC):
@@ -13,6 +19,11 @@ class Task(ABC):
         """Defines actions to keep constant for the task. \n
         {action_id: action_value}"""
         return {}
+
+    @final
+    def __str__(self) -> str:
+        """Class name in snake_case used for paths and model names."""
+        return re.sub(r"(?<!^)(?=[A-Z])", "_", type(self).__name__).lower()
 
     @final
     def map_action(self, action: np.ndarray) -> np.ndarray:
@@ -26,17 +37,15 @@ class Task(ABC):
 
         return scaled
 
+    # These methods should only be used during sim training
     @abstractmethod
-    def reset(self) -> None:
+    def reset(self, sim: CozmoSim) -> None:
         """Defines logic to reset task state for new episode."""
-        pass
 
     @abstractmethod
-    def reward(self, action: np.ndarray) -> float:
+    def reward(self, sim: CozmoSim, action: np.ndarray) -> float:
         """Defines reward function for the task."""
-        pass
 
     @abstractmethod
-    def do_terminate(self) -> bool:
+    def do_terminate(self, sim: CozmoSim) -> bool:
         """Defines condition to terminate the episode (success or failure)."""
-        pass

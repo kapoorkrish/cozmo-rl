@@ -5,7 +5,7 @@ import numpy as np
 
 from sim.simulation import CozmoSim
 from train.tasks.task import Task
-from constants import HZ, STATE_MIN, STATE_MAX, VISION_DIM
+from utils import HZ, STATE_MIN, STATE_MAX, VISION_DIM
 
 
 class CozmoEnv(gym.Env):
@@ -23,22 +23,22 @@ class CozmoEnv(gym.Env):
         self.observation_space = spaces.Dict(
             {
                 "state": spaces.Box(STATE_MIN, STATE_MAX),
-                "vision": spaces.Box(0, 255, VISION_DIM, dtype=np.uint8), # TODO
+                "vision": spaces.Box(0, 255, VISION_DIM, dtype=np.uint8)
             }
         )
 
     def _get_obs(self) -> dict[str, np.ndarray]:
         return {
-            "state": np.clip(self.sim.get_state(), STATE_MIN, STATE_MAX),
+            "state": self.sim.get_state(),
             "vision": self.sim.get_frames()
         }
 
     def reset(self, *, seed: int | None = None, options: dict | None = None):
         super().reset(seed=seed)
-        self.sim.reset()
+        self.sim.reset(seed)
 
         obs = self._get_obs()
-        self.task.reset(obs)
+        self.task.reset(self.sim)
 
         return obs, {}
 
@@ -47,8 +47,8 @@ class CozmoEnv(gym.Env):
         self.sim.step_sim()
 
         obs = self._get_obs()
-        reward = self.task.reward(obs, action)
-        terminated = self.task.do_terminate(obs)
+        reward = self.task.reward(self.sim, action)
+        terminated = self.task.do_terminate(self.sim)
         truncated = self.sim.step_count >= 500
         info = {"is_success": terminated}
 

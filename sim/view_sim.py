@@ -2,7 +2,7 @@ import time
 import mujoco.viewer
 
 from sim.simulation import CozmoSim
-from constants import HZ
+from utils import HZ
 
 sim = CozmoSim()
 sim.reset()

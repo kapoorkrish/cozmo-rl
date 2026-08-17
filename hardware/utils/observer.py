@@ -1,19 +1,21 @@
 import pycozmo
 
 import numpy as np
+from PIL import Image
 import time
 from collections import deque
 import threading
 
-from constants import VISION_DIM, STATE_MIN, STATE_MAX
+from utils import VISION_DIM, WHEEL_RADIUS, normalize_state
 
 CUBE_1G = 31
+
 
 def _lift_mm_to_rad(mm):
     pivot_h = 45.0
     lift_arm_len = 66.0
     lift_h_clipped = np.clip(mm, 32.0, 92.0)
-    
+
     return np.arcsin((lift_h_clipped - pivot_h) / lift_arm_len)
 
 
@@ -22,6 +24,7 @@ class CozmoObserver:
         self.lock = threading.Lock()
         self.robot_state = None
         self.cube_accel = (0.0, 0.0, 0.0)
+        self.latest_frame = None
         self.frames = deque(maxlen=VISION_DIM[0])
         self.cube_id = None
 
@@ -35,10 +38,11 @@ class CozmoObserver:
                 self.cube_accel = (pkt.accel_x, pkt.accel_y, pkt.accel_z)
 
     def _on_camera(self, cli, image) -> None:
-        # Downsample by strides of 4
-        frame = np.asarray(image.convert("L"))[::4, ::4].astype(np.uint8)
+        """Keep only the newest frame. The stack is sampled on the control tick."""
+        small = image.convert("L").resize((VISION_DIM[2], VISION_DIM[1]), Image.BOX)
+
         with self.lock:
-            self.frames.append(frame)
+            self.latest_frame = np.asarray(small, dtype=np.uint8)
 
     def _find_cube(self, cli, cube: pycozmo.protocol_encoder.ObjectType, timeout: float) -> int:
         deadline = time.time() + timeout
@@ -74,11 +78,15 @@ class CozmoObserver:
         cli.conn.send(pycozmo.protocol_encoder.StreamObjectAccel(object_id=self.cube_id, enable=True))
 
     def get_obs(self) -> dict[str, np.ndarray]:
-        """Returns state and vision observation vectors or None until all streams are live."""
         with self.lock:
-            if self.robot_state is None or len(self.frames) < VISION_DIM[0]:
+            if self.robot_state is None or self.latest_frame is None:
                 return None
-            
+
+            # One frame push per step, append copies until full
+            self.frames.append(self.latest_frame)
+            while len(self.frames) < self.frames.maxlen:
+                self.frames.append(self.frames[-1])
+
             robot = self.robot_state
             cube_accel = [a / CUBE_1G for a in self.cube_accel]
             images = np.stack(self.frames, axis=0)
@@ -88,8 +96,8 @@ class CozmoObserver:
                 robot.pose_x,
                 robot.pose_y,
                 robot.pose_angle_rad,
-                robot.lwheel_speed_mmps,
-                robot.rwheel_speed_mmps,
+                robot.lwheel_speed_mmps / WHEEL_RADIUS,
+                robot.rwheel_speed_mmps / WHEEL_RADIUS,
                 _lift_mm_to_rad(robot.lift_height_mm),
                 robot.head_angle_rad,
                 *cube_accel,
@@ -98,6 +106,6 @@ class CozmoObserver:
         )
         
         return {
-            "state": np.clip(state, STATE_MIN, STATE_MAX),
+            "state": normalize_state(state),
             "vision": images
         }

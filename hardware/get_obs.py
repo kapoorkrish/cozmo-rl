@@ -2,7 +2,7 @@ import pycozmo
 import time
 
 from hardware.utils.observer import CozmoObserver
-from constants import HZ
+from utils import HZ
 
 observer = CozmoObserver()
 

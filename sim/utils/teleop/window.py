@@ -10,14 +10,15 @@ TRACK_DISTANCE = 0.45
 TRACK_ELEVATION = -25.0
 TRACK_AZIMUTH = 135.0
 
-DEFAULT_CAM = "cozmo_chase"
+DEFAULT_CAM = "cozmo_cam"
 
 
 class Window:
-    def __init__(self, model, data, on_reset=lambda: None):
+    def __init__(self, model, data, recorder, on_reset=lambda: None, bindings=None):
         self.model, self.data = model, data
         self.on_reset = on_reset
-
+        self.recorder = recorder
+        
         if not glfw.init():
             raise RuntimeError("GLFW init failed")
 
@@ -48,7 +49,6 @@ class Window:
         self.set_cam(self.cam_list.index(DEFAULT_CAM) if DEFAULT_CAM in self.cam_list else 0)
 
         self.held = set()
-        self.paused = False
 
         glfw.set_key_callback(self.window, self._on_key)
 
@@ -74,17 +74,19 @@ class Window:
         if action == glfw.PRESS:
             self.held.add(key)
             
-            if key == glfw.KEY_ESCAPE:
+            if key == glfw.KEY_Q:
                 glfw.set_window_should_close(win, True)
-            elif key == glfw.KEY_SPACE:
-                self.paused = not self.paused
             elif key == glfw.KEY_R:
-                self.on_reset() 
+                self.on_reset()
             elif key == glfw.KEY_RIGHT_BRACKET:
                 self.set_cam(self.cam_idx + 1)
             elif key == glfw.KEY_LEFT_BRACKET:
                 self.set_cam(self.cam_idx - 1)
-        
+            elif key == glfw.KEY_SPACE:
+                self.recorder.toggle()
+            elif key == glfw.KEY_BACKSPACE:
+                self.recorder.discard()
+
         elif action == glfw.RELEASE:
             self.held.discard(key)
 
@@ -99,8 +101,6 @@ class Window:
         mujoco.mjr_render(viewport, self.scene, self.mjr_context)
 
         lines = list(status_lines) + [f"Camera  {self.cam_list[self.cam_idx]}"]
-        if self.paused:
-            lines.append("PAUSED")
         mujoco.mjr_overlay(mujoco.mjtFont.mjFONT_NORMAL, mujoco.mjtGridPos.mjGRID_TOPLEFT,
                            viewport, "\n".join(lines), "", self.mjr_context)
 

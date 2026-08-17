@@ -4,7 +4,7 @@ import numpy as np
 import glfw
 import mujoco
 
-from constants import HZ
+from utils import HZ
 
 WHEEL_R_MM = 13.14
 MAX_SPEED_MMPS = 200.0

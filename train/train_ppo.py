@@ -5,18 +5,17 @@ from stable_baselines3.common.monitor import Monitor
 
 from sim.simulation import CozmoSim
 from train.utils.environment import CozmoEnv
-from train.tasks.drive_straight import DriveStraight
 from train.utils.checkpoint import load_checkpoint, make_checkpoint
 
-MODEL_NAME = "drive_straight_ppo"
-VIDEO_EVERY = 50
-TIMESTEPS = 100_000
+from config import TASK, VIDEO_EVERY, TIMESTEPS
+
+MODEL_NAME = str(TASK)
 
 
 # Set up mujoco sim & gynasium environment wrapper
 sim = CozmoSim()
 
-env = CozmoEnv(sim, DriveStraight())
+env = CozmoEnv(sim, TASK)
 env = RecordVideo(
     env,
     video_folder=f"./models/videos/{MODEL_NAME}",
@@ -42,4 +41,4 @@ model.learn(
     callback=make_checkpoint(MODEL_NAME),
     reset_num_timesteps=False,
 )
-model.save(f"./models/{MODEL_NAME}")
+model.save(f"./models/ppo/{MODEL_NAME}")

@@ -6,7 +6,7 @@ import mujoco
 from mujoco import mj_name2id, mj_id2name
 from PIL import Image, ImageOps
 
-from constants import COZMO_SPAWN_RADIUS, CUBE_SPAWN_RADIUS, SPAWN_GAP
+from utils import COZMO_SPAWN_RADIUS, CUBE_SPAWN_RADIUS, SPAWN_GAP
 
 TEXTURE_DIR = "./sim/assets/textures"
 SURFACES = ("floor", "wall")
@@ -14,13 +14,15 @@ REPEAT = {"floor": (4.0, 12.0), "wall": (6.0, 14.0)}
 TINT = 0.08
 
 LIGHT_ON_PROB = 0.8
-BRIGHTNESS = (0.4, 0.9)
+MIN_LIGHTS_ON = 2
+AIM_SPREAD = 0.5
+BRIGHTNESS = (0.5, 0.9)
 WARMTH = 0.10
 SPECULAR = (0.0, 0.4)
-AMBIENT = (0.0, 0.08)
+AMBIENT = (0.02, 0.10)
 SHADOW_PROB = 0.6
-HEADLIGHT_AMBIENT = (0.02, 0.20)
-HEADLIGHT_DIFFUSE = (0.0, 0.25)
+HEADLIGHT_AMBIENT = (0.10, 0.25)
+HEADLIGHT_DIFFUSE = (0.15, 0.35)
 
 WHEELS = ("front_left_wheel", "front_right_wheel", "rear_left_wheel", "rear_right_wheel")
 FRICTION = (0.8, 1.3)
@@ -106,8 +108,11 @@ class DomainRandomizer:
         L, H = self.half, self.height
 
         on = rng.random(model.nlight) < LIGHT_ON_PROB
-        if not on.any():
-            on[rng.integers(model.nlight)] = True
+
+        need = min(MIN_LIGHTS_ON, model.nlight)
+        if on.sum() < need:
+            off = np.flatnonzero(~on)
+            on[rng.choice(off, need - on.sum(), replace=False)] = True
 
         for i in range(model.nlight):
             model.light_active[i] = bool(on[i])
@@ -115,7 +120,9 @@ class DomainRandomizer:
                 continue
 
             pos = np.array([rng.uniform(-L, L), rng.uniform(-L, L), rng.uniform(0.5 * H, 0.9 * H)])
-            aim = np.array([rng.uniform(-L, L), rng.uniform(-L, L), 0.0]) - pos
+            target = np.array([rng.uniform(-L, L) * AIM_SPREAD, rng.uniform(-L, L) * AIM_SPREAD, 0.0])
+            aim = target - pos
+
             model.light_pos[i] = pos
             model.light_dir[i] = aim / np.linalg.norm(aim)
 

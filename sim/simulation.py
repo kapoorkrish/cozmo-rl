@@ -7,12 +7,9 @@ from skimage.color import rgb2gray
 
 from sim.utils.domain_rand import DomainRandomizer
 from sim.utils.world import build_model
-from constants import HZ, VISION_DIM
+from utils import HZ, VISION_DIM, normalize_state
 
 ACTUATORS = ("left_front_motor", "right_front_motor", "lift_motor", "head_motor")
-STATE_FIELDS = ("pose_x", "pose_y", "pose_angle",
-                "lwheel", "rwheel", "lift", "head",
-                "accel_x", "accel_y", "accel_z")
 
 
 class CozmoSim:
@@ -30,12 +27,13 @@ class CozmoSim:
         self.video_renderer = None
 
         self.randomizer = DomainRandomizer(self.model, self.data,
-                                           [(self.renderer._gl_context, self.renderer._mjr_context)],
-                                           seed=seed)
-        self.rng = np.random.default_rng(seed)
+                                           [(self.renderer._gl_context, self.renderer._mjr_context)])
+        self.seed(seed)
 
         self.target = f"c{target}_"
-        self.cube_joints = [f"c{i + 1}_cube_free" for i in range(num_cubes)]
+
+        self.cube_joints = list(self.randomizer.cube_joints)
+        self.target_joint = next(j for j in self.cube_joints if j.startswith(self.target))
 
         self.act_ids = np.array([self.model.actuator(n).id for n in ACTUATORS])
 
@@ -58,8 +56,17 @@ class CozmoSim:
         """Register a context to receive randomized textures (used for teleop & video rendering)."""
         self.randomizer.contexts.append((gl_context, mjr_context))
 
-    def reset(self) -> None:
-        """Reset mujoco sim with new randomization."""
+    def seed(self, seed=None) -> None:
+        """Reseed the sim and the randomizer with independent streams."""
+        sim_seed, rand_seed = np.random.SeedSequence(seed).spawn(2)
+        self.rng = np.random.default_rng(sim_seed)
+        self.randomizer.rng = np.random.default_rng(rand_seed)
+
+    def reset(self, seed=None) -> None:
+        """Reset mujoco sim with new randomization. A seed makes the episode reproducible."""
+        if seed is not None:
+            self.seed(seed)
+
         mujoco.mj_resetData(self.model, self.data)
         self.randomizer.randomize()
 
@@ -81,31 +88,56 @@ class CozmoSim:
         self.step_count += 1
         self._push_frame()
 
-    def get_state(self) -> np.ndarray:
-        """State observation vector: \n
-        [pose x, pose y, pose angle,
-        left speed, right speed, lift angle, head angle,
-        cube accel x, cube accel y, cube accel z]
+    def get_raw_state(self) -> dict[str, float]:
+        """State in physical units: mm, rad, g. \n
+        This state includes privileged info present in simulation but not reality,
+        which may only be used for rewards and termination.
         """
         d = self.data
         pose = d.sensor("pose").data
         xaxis = d.sensor("pose_xaxis").data
-        ax, ay, az = d.sensor(self.target + "cube_accel").data / 9.81
+        accel = d.sensor(self.target + "cube_accel").data / 9.81
+        cube = d.joint(self.target_joint).qpos
 
-        return np.array(
-            [
-                pose[0] * 1000.0,
-                pose[1] * 1000.0,
-                math.atan2(xaxis[1], xaxis[0]),
-                d.sensor("lwheel_speed").data[0],
-                d.sensor("rwheel_speed").data[0],
-                d.sensor("lift_angle").data[0],
-                d.sensor("head_angle").data[0],
-                ax,
-                ay,
-                az,
-            ],
-            dtype=np.float32
+        return {
+            "pose_x": pose[0] * 1000.0,
+            "pose_y": pose[1] * 1000.0,
+            "pose_angle": math.atan2(xaxis[1], xaxis[0]),
+            "lwheel": d.sensor("lwheel_speed").data[0],
+            "rwheel": d.sensor("rwheel_speed").data[0],
+            "lift": d.sensor("lift_angle").data[0],
+            "head": d.sensor("head_angle").data[0],
+            "accel_x": accel[0],
+            "accel_y": accel[1],
+            "accel_z": accel[2],
+            # Privileged sim info
+            "cube_x": cube[0] * 1000.0,
+            "cube_y": cube[1] * 1000.0,
+            "cube_z": cube[2] * 1000.0,
+            "step": self.step_count,
+        }
+
+    def get_state(self) -> np.ndarray:
+        """Observation vector normalized to [-1, 1],
+        with only sensor data available in real CozmoObserver."""
+        state = self.get_raw_state()
+
+        return normalize_state(
+            np.array(
+                [
+                    state["pose_x"],
+                    state["pose_y"],
+                    state["pose_angle"],
+                    state["lwheel"],
+                    state["rwheel"],
+                    state["lift"],
+                    state["head"],
+                    state["accel_x"],
+                    state["accel_y"],
+                    state["accel_z"],
+                ],
+                dtype=np.float32
+            )
         )
 
     def get_frames(self) -> np.ndarray:

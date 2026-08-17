@@ -4,16 +4,15 @@ import pycozmo
 from stable_baselines3 import PPO
 
 from hardware.utils.observer import CozmoObserver
-from train.tasks.drive_straight import DriveStraight
-from constants import HZ
 
-MODEL = "./models/checkpoints/drive_straight_ppo_100000_steps"
+from config import TASK
+from utils import HZ, WHEEL_RADIUS
+
+MODEL = f"./models/bc/{TASK!s}"
 MAX_STEPS = 500
 
-TASK = DriveStraight()
-
 def _wheel_rad_to_mm(rad):
-    return rad * 13.14
+    return rad * WHEEL_RADIUS
 
 def _lift_rad_to_mm(rad):
     return 45.0 + 66.0 * np.sin(rad)
@@ -42,23 +41,12 @@ with pycozmo.connect() as cli:  # type: ignore
         time.sleep(1 / HZ)
 
     input("Press Enter to run policy.")
-    TASK.reset(obs)
-
-    total, action = 0.0, None
 
     try:
         for step in range(MAX_STEPS):
             start = time.perf_counter()
 
             obs = observer.get_obs()
-
-            if action is not None:
-                total += TASK.reward(obs, action)
-
-            if TASK.do_terminate(obs):
-                print(f"Terminated at step {step}.")
-                break
-
             action, _ = model.predict(obs, deterministic=True)
             _apply_action(cli, action)
 
@@ -70,4 +58,3 @@ with pycozmo.connect() as cli:  # type: ignore
 
     finally:
         cli.stop_all_motors()
-        print(f"Reward: {total:.1f}")
