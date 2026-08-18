@@ -1,5 +1,3 @@
-"""Drive, lift and head control."""
-
 import numpy as np
 import glfw
 import mujoco
@@ -16,18 +14,21 @@ PRECISION_SCALE = 0.3
 HEAD_RATE = 1.0
 LIFT_RATE = 1.2
 
-def _actuator_id(m, name):
-    return mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_ACTUATOR, name)
+def _actuator_id(model: mujoco.MjModel, name: str) -> int:
+    return mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_ACTUATOR, name)
 
-def _ramp(cur, tgt, dt, scale):
-    rate = ACCEL_MMPS2 if abs(tgt) > abs(cur) else DECEL_MMPS2
+def _ramp(cur: float, target: float, dt: float, scale: float) -> float:
+    """Accelerate to target velocity at specified rate."""
+    rate = ACCEL_MMPS2 if abs(target) > abs(cur) else DECEL_MMPS2
     step = rate * scale * dt
     
-    return cur + float(np.clip(tgt - cur, -step, step))
+    return cur + float(np.clip(target - cur, -step, step))
 
 
 class Control:
-    def __init__(self, model, data):
+    """Drive, lift, and head control."""
+
+    def __init__(self, model: mujoco.MjModel, data: mujoco.MjData):
         self.model, self.data = model, data
 
         self.a_lwheel = _actuator_id(model, "left_front_motor")
@@ -42,13 +43,15 @@ class Control:
         self.n_substeps = max(1, round(dt / model.opt.timestep))
         self.reset()
 
-    def reset(self):
+    def reset(self) -> None:
+        """Reset control states."""
         self.v_cur = self.w_cur = 0.0
         self.head_tgt = self.lift_tgt = 0.0
         self.left = self.right = 0.0
         self.data.ctrl[:] = 0.0
 
-    def apply(self, held, dt):
+    def apply(self, held: set[int], dt: float) -> None:
+        """Map held keys to actuator commands for one timestep."""
         scale = PRECISION_SCALE if glfw.KEY_LEFT_SHIFT in held else 1.0
 
         v_target = ((glfw.KEY_W in held) - (glfw.KEY_S in held)) * MAX_SPEED_MMPS * scale
@@ -77,7 +80,8 @@ class Control:
         self.data.ctrl[self.a_head] = self.head_tgt
         self.data.ctrl[self.a_lift] = self.lift_tgt
 
-    def status_lines(self):
+    def status_lines(self) -> list[str]:
+        """Display lines for teleop HUD."""
         return [
             f"L {self.left:7.1f} mm/s",
             f"R {self.right:7.1f} mm/s",

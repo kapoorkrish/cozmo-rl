@@ -1,9 +1,8 @@
-"""Record teleop demonstrations to be read as (observation, action) pairs."""
+from collections.abc import Callable
 
-import time
 from pathlib import Path
-
 import numpy as np
+import time
 
 from sim.simulation import CozmoSim
 from config import TASK
@@ -13,9 +12,14 @@ DEMO_DIR = Path(f"./demos/{TASK!s}")
 
 
 class Recorder:
-    """Records one episode of (state, vision, action) trajectories."""
+    """Record states, visions, and actions in teleop demonstration episode,
+    to be read later as (observation, action) pairs."""
 
-    def __init__(self, sim: CozmoSim, reset, out_dir=DEMO_DIR):
+    def __init__(self,
+                 sim: CozmoSim,
+                 reset: Callable[..., None],
+                 out_dir: Path | str = DEMO_DIR):
+        
         self.sim = sim
         self.reset = reset
         self.out_dir = Path(out_dir)
@@ -29,10 +33,10 @@ class Recorder:
 
     def toggle(self) -> None:
         """Save the episode in progress, or start a new one."""
-        self.save() if self.recording else self.arm()
+        self.save() if self.recording else self.reset()
 
-    def arm(self) -> None:
-        """Reset on a fresh seed and record from step 0."""
+    def reset(self) -> None:
+        """Reset on a fresh seed."""
         seed = int(np.random.SeedSequence().entropy % (2 ** 32))
         self.reset(seed)
 
@@ -49,7 +53,7 @@ class Recorder:
         self.actions.append(normalize_action(self.sim.data.ctrl[self.sim.act_ids]).astype(np.float32))
 
     def save(self) -> None:
-        """Write the episode to disk and stop recording."""
+        """Write episode trajectory to disk and stop recording."""
         if not self.recording:
             return
         if not self.actions:
@@ -74,17 +78,19 @@ class Recorder:
         self._clear()
 
     def discard(self) -> None:
-        """Drop the in-progress episode."""
+        """Discard the episode recording."""
         if self.recording:
             self.status = "Discarded"
 
         self._clear()
 
     def _clear(self) -> None:
+        """Clear recording status and data."""
         self.recording = False
         self.states, self.visions, self.actions = [], [], []
 
-    def status_lines(self):
+    def status_lines(self) -> list[str]:
+        """Display lines for teleop HUD."""
         if self.recording:
             return [f"REC {len(self.actions) / HZ:5.1f}s  seed {self.seed}"]
 

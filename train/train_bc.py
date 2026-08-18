@@ -1,4 +1,4 @@
-"""Behavioral cloning on teleop demos. Saves a PPO model to warm-start training from."""
+"""Behavioral cloning on teleop demos, saved as PPO model for later fine-tuning."""
 
 from pathlib import Path
 

@@ -5,7 +5,7 @@ from typing import override
 from train.tasks.task import Task
 from utils import HZ
 
-def _wrap_angle(angle):
+def _wrap_angle(angle: float) -> float:
     return (angle + math.pi) % (2 * math.pi) - math.pi
 
 

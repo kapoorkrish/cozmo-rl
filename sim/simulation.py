@@ -15,8 +15,8 @@ ACTUATORS = ("left_front_motor", "right_front_motor", "lift_motor", "head_motor"
 class CozmoSim:
     """Serves as an API to interact with mujoco simulation."""
 
-    def __init__(self, num_cubes=1, target=1, seed=None):
-        self.model = build_model(num_cubes=num_cubes)
+    def __init__(self, num_cubes: int = 1, target: int = 1, seed: int | None = None):
+        self.model = build_model(num_cubes)
         self.data = mujoco.MjData(self.model)
 
         # Hide Cozmo head from obstructing its camera
@@ -56,14 +56,14 @@ class CozmoSim:
         """Register a context to receive randomized textures (used for teleop & video rendering)."""
         self.randomizer.contexts.append((gl_context, mjr_context))
 
-    def seed(self, seed=None) -> None:
+    def seed(self, seed: int | None = None) -> None:
         """Reseed the sim and the randomizer with independent streams."""
         sim_seed, rand_seed = np.random.SeedSequence(seed).spawn(2)
         self.rng = np.random.default_rng(sim_seed)
         self.randomizer.rng = np.random.default_rng(rand_seed)
 
-    def reset(self, seed=None) -> None:
-        """Reset mujoco sim with new randomization. A seed makes the episode reproducible."""
+    def reset(self, seed: int | None = None) -> None:
+        """Reset mujoco sim with new randomization."""
         if seed is not None:
             self.seed(seed)
 
@@ -80,7 +80,7 @@ class CozmoSim:
         """Apply action vector to sim."""
         self.data.ctrl[self.act_ids] = action
 
-    def step_sim(self):
+    def step_sim(self) -> None:
         """Take substeps according to refresh rate, equating to one timestep."""
         for _ in range(self.substeps):
             mujoco.mj_step(self.model, self.data)

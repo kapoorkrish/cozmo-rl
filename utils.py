@@ -1,3 +1,5 @@
+"""Constants and helpers used throughout codebase."""
+
 import numpy as np
 
 # Refresh rate (sim & reality)

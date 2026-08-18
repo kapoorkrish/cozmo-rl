@@ -1,3 +1,5 @@
+"""Default mujoco viewer for simulation."""
+
 import time
 import mujoco.viewer
 

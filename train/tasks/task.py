@@ -1,15 +1,15 @@
 from __future__ import annotations
+from typing import TYPE_CHECKING, final
+
+if TYPE_CHECKING:
+    from sim.simulation import CozmoSim
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, final
 
 import numpy as np
 import re
 
 from utils import ACTION_MIN, ACTION_MAX
-
-if TYPE_CHECKING:
-    from sim.simulation import CozmoSim
 
 
 class Task(ABC):

@@ -29,7 +29,13 @@ FRICTION = (0.8, 1.3)
 
 
 class DomainRandomizer:
-    def __init__(self, model, data, contexts=(), seed=None):
+    """Randomize the scene setting to mitigate overfitting in training."""
+
+    def __init__(self,
+                 model: mujoco.MjModel, data: mujoco.MjData,
+                 contexts: tuple = (),
+                 seed: int | None = None):
+        
         self.model = model
         self.data = data
         self.rng = np.random.default_rng(seed)
@@ -60,7 +66,7 @@ class DomainRandomizer:
                            for j in range(3)] for i in range(len(self.cube_joints))]
 
     # Textures
-    def _set_texture(self, tid, path):
+    def _set_texture(self, tid: int, path: str) -> None:
         """Load image into model texture and push to all contexts."""
         model = self.model
         h, w = int(model.tex_height[tid]), int(model.tex_width[tid])
@@ -82,7 +88,7 @@ class DomainRandomizer:
             gl.make_current()
             mujoco.mjr_uploadTexture(model, mjr, tid)
 
-    def randomize_textures(self):
+    def randomize_textures(self) -> None:
         """Pick a random texture per surface and distinct design per cube."""
         model, rng = self.model, self.rng
 
@@ -102,7 +108,7 @@ class DomainRandomizer:
             model.geom_matid[gid] = mats[j]
 
     # Lighting
-    def randomize_lights(self):
+    def randomize_lights(self) -> None:
         """Move, recolor, and toggle every light."""
         model, rng = self.model, self.rng
         L, H = self.half, self.height
@@ -137,7 +143,7 @@ class DomainRandomizer:
         model.vis.headlight.diffuse[:] = rng.uniform(*HEADLIGHT_DIFFUSE)
 
     # Friction
-    def randomize_friction(self):
+    def randomize_friction(self) -> None:
         """Randomize friction between floor and wheels."""
         mu = self.rng.uniform(*FRICTION)
 
@@ -145,7 +151,8 @@ class DomainRandomizer:
             self.model.geom_friction[g, 0] = mu
 
     # Spawn locations and orientations
-    def _get_spawns(self, n, radius):
+    def _get_spawns(self, n: int, radius: tuple[float, float]) -> list[np.ndarray]:
+        """Get spawns for n entities within a given radius range."""
         out = []
         while len(out) < n:
             r, th = self.rng.uniform(*radius), self.rng.uniform(0, 2 * np.pi)
@@ -156,7 +163,7 @@ class DomainRandomizer:
 
         return out
 
-    def randomize_spawns(self):
+    def randomize_spawns(self) -> None:
         """Randomize positions and orientations of cozmo and cubes."""
         rng = self.rng
         spawns = (self._get_spawns(1, COZMO_SPAWN_RADIUS)
@@ -169,7 +176,8 @@ class DomainRandomizer:
             qpos[3:7] = [np.cos(yaw / 2), 0.0, 0.0, np.sin(yaw / 2)]
 
     # Randomize environment
-    def randomize(self):
+    def randomize(self) -> None:
+        """Randomize various aspects of scene."""
         self.randomize_textures()
         self.randomize_lights()
         self.randomize_friction()

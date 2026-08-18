@@ -33,7 +33,7 @@ class CozmoEnv(gym.Env):
             "vision": self.sim.get_frames()
         }
 
-    def reset(self, *, seed: int | None = None, options: dict | None = None):
+    def reset(self, *, seed=None, options=None):
         super().reset(seed=seed)
         self.sim.reset(seed)
 

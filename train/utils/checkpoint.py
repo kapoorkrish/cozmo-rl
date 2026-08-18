@@ -21,6 +21,6 @@ def load_checkpoint(name: str, env: CozmoEnv) -> tuple[PPO | None, int]:
     model = PPO.load(latest, env=env)
     return model, model.num_timesteps
 
-def make_checkpoint(name: str, freq: int = 25_000) -> CheckpointCallback:
+def make_checkpoint(name: str, freq: int = 15_000) -> CheckpointCallback:
     """Makes a CheckpointCallback to save training checkpoints at a specified frequency."""
     return CheckpointCallback(save_freq=freq, save_path=CHECKPOINT_DIR, name_prefix=name)

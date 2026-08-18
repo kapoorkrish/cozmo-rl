@@ -1,3 +1,5 @@
+"""PPO training in environment using reward function defined in selected task."""
+
 from stable_baselines3 import PPO
 
 from gymnasium.wrappers import RecordVideo

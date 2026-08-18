@@ -1,3 +1,5 @@
+"""Runs trained policy in simulation to visualize performance."""
+
 from stable_baselines3 import PPO
 import mujoco.viewer
 

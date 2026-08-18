@@ -1,3 +1,5 @@
+"""Configure task and hyperparameters."""
+
 from train.tasks.lift_cube import LiftCube
 
 TASK = LiftCube()
