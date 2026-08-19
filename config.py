@@ -10,5 +10,7 @@ BATCH_SIZE = 64
 LEARNING_RATE = 3e-4
 
 # Train: Proximal Policy Optimization (ppo)
+TIMESTEPS = 500_000
+N_ENVS = 4
+ROLLOUT = 2048
 VIDEO_EVERY = 50
-TIMESTEPS = 250_000
