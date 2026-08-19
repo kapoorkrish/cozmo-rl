@@ -46,11 +46,11 @@ class CozmoSim:
         """Render Cozmo's camera into the frame stack."""
         self.renderer.update_scene(self.data, camera="cozmo_cam", scene_option=self.cam_option)
         grayscale = (rgb2gray(self.renderer.render()) * 255).astype(np.uint8)
-        self.frames.append(grayscale)
+        self.frames.append(self.randomizer.augment(grayscale))
 
         # Push frame copies until stack is full
         while len(self.frames) < self.frames.maxlen:
-            self.frames.append(self.frames[-1])
+            self.frames.append(self.randomizer.augment(grayscale))
 
     def _get_world_pose(self) -> tuple[float, float, float]:
         """World pose of cozmo (x, y, angle) in meters and radians."""

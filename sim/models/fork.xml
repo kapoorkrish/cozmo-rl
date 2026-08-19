@@ -4,7 +4,7 @@
   <compiler angle="radian" meshdir="../assets/meshes" autolimits="true"/>
 
   <asset>
-    <material name="fork_mat" rgba="0.949 0.953 0.957 1"/>
+    <material name="fork_mat" rgba="0.96 0.96 0.96 1" specular="0.3" shininess="0.4"/>
     <mesh name="fork_bottom" content_type="model/obj" file="fork/fork_bottom.obj" scale="0.01 0.01 0.01"/>
     <mesh name="fork_left" content_type="model/obj" file="fork/fork_left.obj" scale="0.01 0.01 0.01"/>
     <mesh name="fork_right" content_type="model/obj" file="fork/fork_right.obj" scale="0.01 0.01 0.01"/>
@@ -14,21 +14,21 @@
 
   <worldbody>
     <body name="fork" pos="0 0 0">
-      <joint name="right_lower_pivot" pos="0.0541 -0.0192 0.0281" axis="0 -1 0" armature="0.0005" damping="0.02"/>
+      <joint name="right_lower_pivot" pos="0.0515 -0.0192 0.0182" axis="0 -1 0" armature="0.0005" damping="0.02"/>
 
       <inertial pos="0.053754 0.000109 0.015779" mass="0.009"
                 fullinertia="3.285023e-06 7.675117e-07 2.617684e-06 1.932247e-11 4.205440e-09 -7.205558e-12"/>
 
       <!-- Collision -->
-      <geom name="fork_bottom" type="mesh" mesh="fork_bottom" mass="0"
+      <geom name="fork_bottom" type="mesh" mesh="fork_bottom" material="fork_mat" mass="0"
             contype="2" conaffinity="1" friction="1.0 0.005 0.0001"/>
-      <geom name="fork_left" type="mesh" mesh="fork_left" mass="0"
+      <geom name="fork_left" type="mesh" mesh="fork_left" material="fork_mat" mass="0"
             contype="2" conaffinity="1" friction="1.0 0.005 0.0001"/>
-      <geom name="fork_right" type="mesh" mesh="fork_right" mass="0"
+      <geom name="fork_right" type="mesh" mesh="fork_right" material="fork_mat" mass="0"
             contype="2" conaffinity="1" friction="1.0 0.005 0.0001"/>
-      <geom name="tine_left" type="mesh" mesh="tine_left" mass="0" pos="0 0.0008 0"
+      <geom name="tine_left" type="mesh" mesh="tine_left" material="fork_mat" mass="0" pos="0 0.0008 0"
             contype="2" conaffinity="1" friction="1.0 0.005 0.0001"/>
-      <geom name="tine_right" type="mesh" mesh="tine_right" mass="0" pos="0 -0.0008 0"
+      <geom name="tine_right" type="mesh" mesh="tine_right" material="fork_mat" mass="0" pos="0 -0.0008 0"
             contype="2" conaffinity="1" friction="1.0 0.005 0.0001"/>
     </body>
   </worldbody>

@@ -6,7 +6,7 @@ import mujoco
 from mujoco import mj_name2id, mj_id2name
 from PIL import Image, ImageOps
 
-from utils import COZMO_SPAWN_RADIUS, CUBE_SPAWN_RADIUS, SPAWN_GAP
+from utils import COZMO_SPAWN_RADIUS, CUBE_SPAWN_RADIUS, SPAWN_GAP, VISION_DIM
 
 TEXTURE_DIR = "./sim/assets/textures"
 SURFACES = ("floor", "wall")
@@ -23,6 +23,16 @@ AMBIENT = (0.0, 0.05)
 SHADOW_PROB = 0.85
 HEADLIGHT_AMBIENT = (0.03, 0.12)
 HEADLIGHT_DIFFUSE = (0.05, 0.20)
+
+# Camera setting randomness per episode
+CAM_GAIN = (0.75, 1.25)
+CAM_BIAS = (-25.0, 25.0)
+CAM_GAMMA = (0.8, 1.3)
+CAM_VIGNETTE = (0.0, 0.4)
+CAM_FPN = (0.0, 4.0)
+CAM_NOISE = (2.0, 10.0)
+# Camera setting randomness per frame
+CAM_FLICKER = 3.0
 
 WHEELS = ("front_left_wheel", "front_right_wheel", "rear_left_wheel", "rear_right_wheel")
 FRICTION = (0.8, 1.3)
@@ -142,6 +152,32 @@ class DomainRandomizer:
         model.vis.headlight.ambient[:] = rng.uniform(*HEADLIGHT_AMBIENT)
         model.vis.headlight.diffuse[:] = rng.uniform(*HEADLIGHT_DIFFUSE)
 
+    # Camera
+    def randomize_camera(self) -> None:
+        """Resample camera response, held fixed for the episode."""
+        rng = self.rng
+
+        ramp = np.arange(256, dtype=np.float32) / 255.0
+        self.cam_lut = np.clip(ramp ** rng.uniform(*CAM_GAMMA) * 255.0 * rng.uniform(*CAM_GAIN)
+                               + rng.uniform(*CAM_BIAS), 0, 255).astype(np.uint8)
+
+        h, w = VISION_DIM[1], VISION_DIM[2]
+        ys = np.linspace(-1.0, 1.0, h, dtype=np.float32)[:, None]
+        xs = np.linspace(-1.0, 1.0, w, dtype=np.float32)[None, :]
+
+        self.cam_gain_map = 1.0 - rng.uniform(*CAM_VIGNETTE) * (ys ** 2 + xs ** 2) / 2.0
+        self.cam_fpn = rng.normal(0.0, rng.uniform(*CAM_FPN), (h, w)).astype(np.float32)
+        self.cam_noise = rng.uniform(*CAM_NOISE)
+
+    def augment(self, frame: np.ndarray) -> np.ndarray:
+        """Apply camera response and per-frame sensor noise to a rendered frame."""
+        rng = self.rng
+
+        out = self.cam_lut[frame] * self.cam_gain_map + self.cam_fpn
+        out += rng.normal(0.0, self.cam_noise, out.shape) + rng.normal(0.0, CAM_FLICKER)
+
+        return np.clip(out, 0, 255).astype(np.uint8)
+
     # Friction
     def randomize_friction(self) -> None:
         """Randomize friction between floor and wheels."""
@@ -180,5 +216,6 @@ class DomainRandomizer:
         """Randomize various aspects of scene."""
         self.randomize_textures()
         self.randomize_lights()
+        self.randomize_camera()
         self.randomize_friction()
         self.randomize_spawns()
