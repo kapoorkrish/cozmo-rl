@@ -8,7 +8,7 @@ from sim.simulation import CozmoSim
 from train.utils.checkpoint import load_checkpoint, make_checkpoint
 from train.utils.environment import CozmoEnv
 
-from config import N_ENVS, ROLLOUT, TASK, TIMESTEPS, VIDEO_EVERY
+from config import NUM_ENVS, ROLLOUT, TASK, TIMESTEPS, VIDEO_EVERY
 
 MODEL_NAME = str(TASK)
 
@@ -27,14 +27,14 @@ def make_env(idx: int):
 
 
 if __name__ == "__main__":
-    env = VecMonitor(SubprocVecEnv([make_env(i) for i in range(N_ENVS)]))
+    env = VecMonitor(SubprocVecEnv([make_env(i) for i in range(NUM_ENVS)]))
     model, timesteps_done = load_checkpoint(MODEL_NAME, env)
 
     if model is None:
         model = PPO(
             "MultiInputPolicy",
             env,
-            n_steps=ROLLOUT // N_ENVS,
+            n_steps=ROLLOUT // NUM_ENVS,
             batch_size=64,
             learning_rate=3e-4,
             verbose=1,

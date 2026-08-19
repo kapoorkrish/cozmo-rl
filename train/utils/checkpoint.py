@@ -5,6 +5,7 @@ import os
 from glob import glob
 
 from train.utils.environment import CozmoEnv
+from config import NUM_ENVS
 
 CHECKPOINT_DIR = "./models/checkpoints"
 
@@ -21,6 +22,7 @@ def load_checkpoint(name: str, env: CozmoEnv) -> tuple[PPO | None, int]:
     model = PPO.load(latest, env=env)
     return model, model.num_timesteps
 
-def make_checkpoint(name: str, freq: int = 15_000) -> CheckpointCallback:
+def make_checkpoint(name: str, freq: int = 15_000,) -> CheckpointCallback:
     """Makes a CheckpointCallback to save training checkpoints at a specified frequency."""
-    return CheckpointCallback(save_freq=freq, save_path=CHECKPOINT_DIR, name_prefix=name)
+    return CheckpointCallback(save_freq=max(freq // NUM_ENVS, 1), save_path=CHECKPOINT_DIR,
+                              name_prefix=name)
