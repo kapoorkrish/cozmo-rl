@@ -33,6 +33,11 @@ class LiftCube(Task):
         return state["cube_z"] - self.start_cube_z
 
     @override
+    def get_fixed_actions(self) -> dict[int, float]:
+        # Keep head position constant
+        return {3: 0.0}
+    
+    @override
     def reset(self, sim):
         state = sim.get_raw_state()
 
