@@ -18,12 +18,11 @@ with pycozmo.connect() as cli:  # type: ignore
     cli.add_handler(pycozmo.protocol_encoder.RobotState, observer._on_robot_state)
     cli.add_handler(pycozmo.event.EvtNewRawCameraImage, observer._on_camera)
     cli.enable_camera(enable=True, color=False)
+    cli.set_head_light(True)
 
     print("Waiting for streams...")
     while (obs := observer.get_obs()) is None:
         time.sleep(1 / HZ)
-
-    cli.set_lift_height(height=92)
 
     while True:
         obs = observer.get_obs()
