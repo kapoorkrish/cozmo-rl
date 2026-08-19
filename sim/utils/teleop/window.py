@@ -60,6 +60,10 @@ class Window:
 
         glfw.set_key_callback(self.window, self._on_key)
 
+    def make_current(self) -> None:
+        """Bind this window's GL context for texture uploads."""
+        glfw.make_context_current(self.window)
+
     def set_cam(self, i: int) -> None:
         """Select a camera by index, and wrap if out of bounds."""
         self.cam_idx = i % len(self.cam_list)

@@ -37,10 +37,22 @@ CUBE_SPAWN_RADIUS = (0.20, 0.40)
 SPAWN_GAP = 0.09
 
 def normalize_state(state: np.ndarray) -> np.ndarray:
-    """Raw state vector -> [-1, 1]."""
+    """Physical units state vector -> [-1, 1]."""
     clipped = np.clip(state, STATE_MIN, STATE_MAX)
     return (2.0 * (clipped - STATE_MIN) / (STATE_MAX - STATE_MIN) - 1.0).astype(np.float32)
 
+def denormalize_state(state: np.ndarray) -> np.ndarray:
+    """[-1, 1] -> physical units state vector."""
+    return (state + 1.0) / 2.0 * (STATE_MAX - STATE_MIN) + STATE_MIN
+
 def normalize_action(scaled: np.ndarray) -> np.ndarray:
-    """Inverse of Task.map_action: task action space -> [-1, 1]."""
+    """Task action space -> [-1, 1]."""
     return np.clip(2.0 * (scaled - ACTION_MIN) / (ACTION_MAX - ACTION_MIN) - 1.0, -1.0, 1.0)
+
+def lift_rad_to_mm(rad: float) -> float:
+    """Convert lift angle in radians to height in mm for pycozmo command."""
+    return 45.12 + 66.0 * np.sin(rad)
+
+def wheel_rad_to_mm(rad: float) -> float:
+    """Convert wheel angular velocity in rad/s to translational velocity in mm/s."""
+    return rad * WHEEL_RADIUS

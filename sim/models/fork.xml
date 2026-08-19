@@ -14,7 +14,7 @@
 
   <worldbody>
     <body name="fork" pos="0 0 0">
-      <joint name="right_lower_pivot" pos="0.0515 -0.0192 0.0182" axis="0 -1 0" armature="0.0005" damping="0.02"/>
+      <joint name="right_lower_pivot" pos="0.0541 -0.0192 0.0281" axis="0 -1 0" armature="0.0005" damping="0.02"/>
 
       <inertial pos="0.053754 0.000109 0.015779" mass="0.009"
                 fullinertia="3.285023e-06 7.675117e-07 2.617684e-06 1.932247e-11 4.205440e-09 -7.205558e-12"/>

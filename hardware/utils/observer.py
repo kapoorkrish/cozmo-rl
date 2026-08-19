@@ -11,14 +11,6 @@ from utils import VISION_DIM, WHEEL_RADIUS, normalize_state
 CUBE_1G = 31
 
 
-def _lift_mm_to_rad(mm):
-    pivot_h = 45.0
-    lift_arm_len = 66.0
-    lift_h_clipped = np.clip(mm, 32.0, 92.0)
-
-    return np.arcsin((lift_h_clipped - pivot_h) / lift_arm_len)
-
-
 class CozmoObserver:
     def __init__(self):
         self.lock = threading.Lock()
@@ -98,7 +90,7 @@ class CozmoObserver:
                 robot.pose_angle_rad,
                 robot.lwheel_speed_mmps / WHEEL_RADIUS,
                 robot.rwheel_speed_mmps / WHEEL_RADIUS,
-                _lift_mm_to_rad(robot.lift_height_mm),
+                robot.lift_height_mm, # This is actually angle reported by pycozmo
                 robot.head_angle_rad,
                 *cube_accel,
             ],

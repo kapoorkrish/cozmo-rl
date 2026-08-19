@@ -7,7 +7,7 @@ from skimage.color import rgb2gray
 
 from sim.utils.domain_rand import DomainRandomizer
 from sim.utils.world import build_model
-from utils import HZ, VISION_DIM, normalize_state
+from utils import HZ, VISION_DIM, STATE_MIN, normalize_state
 
 ACTUATORS = ("left_front_motor", "right_front_motor", "lift_motor", "head_motor")
 
@@ -52,6 +52,13 @@ class CozmoSim:
         while len(self.frames) < self.frames.maxlen:
             self.frames.append(self.frames[-1])
 
+    def _get_world_pose(self) -> tuple[float, float, float]:
+        """World pose of cozmo (x, y, angle) in meters and radians."""
+        pose = self.data.sensor("pose").data
+        xaxis = self.data.sensor("pose_xaxis").data
+
+        return pose[0], pose[1], math.atan2(xaxis[1], xaxis[0])
+
     def add_context(self, gl_context, mjr_context) -> None:
         """Register a context to receive randomized textures (used for teleop & video rendering)."""
         self.randomizer.contexts.append((gl_context, mjr_context))
@@ -70,8 +77,17 @@ class CozmoSim:
         mujoco.mj_resetData(self.model, self.data)
         self.randomizer.randomize()
 
+        # Match default joint and actuator positions with reality
+        lift_qpos = STATE_MIN[5] + 0.16
+        self.data.qpos[self.model.joint("right_upper_arm_joint").qposadr] = lift_qpos
+        self.data.qpos[self.model.joint("left_upper_arm_joint").qposadr] = lift_qpos
+        self.data.qpos[self.model.joint("right_lower_arm_joint").qposadr] = lift_qpos
+        self.data.qpos[self.model.joint("left_lower_arm_joint").qposadr] = lift_qpos
+        self.data.ctrl[self.model.actuator("lift_motor").id] = STATE_MIN[5]
+
         mujoco.mj_forward(self.model, self.data)
         self.step_count = 0
+        self.origin = self._get_world_pose()
 
         self.frames.clear()
         self._push_frame()
@@ -94,18 +110,24 @@ class CozmoSim:
         which may only be used for rewards and termination.
         """
         d = self.data
-        pose = d.sensor("pose").data
-        xaxis = d.sensor("pose_xaxis").data
         accel = d.sensor(self.target + "cube_accel").data / 9.81
         cube = d.joint(self.target_joint).qpos
 
+        # Convert world pose to local pose on Cozmo
+        world_pose = self._get_world_pose()
+        dx = world_pose[0] - self.origin[0]
+        dy = world_pose[1] - self.origin[1]
+        local_x = dx * math.cos(self.origin[2]) + dy * math.sin(self.origin[2])
+        local_y = -dx * math.sin(self.origin[2]) + dy * math.cos(self.origin[2])
+        d_theta = world_pose[2] - self.origin[2]
+
         return {
-            "pose_x": pose[0] * 1000.0,
-            "pose_y": pose[1] * 1000.0,
-            "pose_angle": math.atan2(xaxis[1], xaxis[0]),
+            "pose_x": local_x * 1000.0,
+            "pose_y": local_y * 1000.0,
+            "pose_angle": math.atan2(math.sin(d_theta), math.cos(d_theta)),
             "lwheel": d.sensor("lwheel_speed").data[0],
             "rwheel": d.sensor("rwheel_speed").data[0],
-            "lift": d.sensor("lift_angle").data[0],
+            "lift": d.sensor("lift_angle").data[0] - 0.16, # Lift offset in sim
             "head": d.sensor("head_angle").data[0],
             "accel_x": accel[0],
             "accel_y": accel[1],

@@ -6,22 +6,16 @@ from stable_baselines3 import PPO
 from hardware.utils.observer import CozmoObserver
 
 from config import TASK
-from utils import HZ, WHEEL_RADIUS
+from utils import HZ, lift_rad_to_mm, wheel_rad_to_mm
 
-MODEL = f"./models/bc/{TASK!s}"
-MAX_STEPS = 500
-
-def _wheel_rad_to_mm(rad):
-    return rad * WHEEL_RADIUS
-
-def _lift_rad_to_mm(rad):
-    return 45.0 + 66.0 * np.sin(rad)
+MODEL = f"./models/ppo/{TASK!s}"
+MAX_STEPS = 1000
 
 def _apply_action(cli, action) -> None:
     lwheel, rwheel, lift, head = TASK.map_action(action)
 
-    cli.drive_wheels(lwheel_speed=_wheel_rad_to_mm(lwheel), rwheel_speed=_wheel_rad_to_mm(rwheel))
-    cli.set_lift_height(height=_lift_rad_to_mm(lift))
+    cli.drive_wheels(lwheel_speed=wheel_rad_to_mm(lwheel), rwheel_speed=wheel_rad_to_mm(rwheel))
+    cli.set_lift_height(height=lift_rad_to_mm(lift))
     cli.set_head_angle(angle=head)
 
 
@@ -43,6 +37,8 @@ with pycozmo.connect() as cli:  # type: ignore
     input("Press Enter to run policy.")
 
     try:
+        cli.set_head_angle(0)
+
         for step in range(MAX_STEPS):
             start = time.perf_counter()
 

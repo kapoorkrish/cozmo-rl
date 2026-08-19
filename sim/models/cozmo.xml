@@ -20,7 +20,7 @@
 
   <worldbody>
     <!-- Cozmo -->
-    <body name="cozmo" pos="0 0 0.03">
+    <body name="cozmo" pos="0 0 0.0251">
       <freejoint name="root"/>
 
       <!-- Chassis -->
@@ -51,7 +51,7 @@
       </body>
 
       <body name="right_lower_arm" pos="0 0 -0.023">
-        <joint name="right_lower_arm_joint" pos="-0.0130 -0.0225 0.0320" axis="0 -1 0" range="-0.04 0.79" limited="true" solreflimit="0.005 1" solimplimit="0.95 0.99 0.001" damping="0.02"/>
+        <joint name="right_lower_arm_joint" pos="-0.0130 -0.0225 0.0320" axis="0 -1 0" range="-0.04 0.95" limited="true" solreflimit="0.005 1" solimplimit="0.95 0.99 0.001" damping="0.02"/>
         <geom type="mesh" mesh="right_lower_arm" material="body_mat" mass="0.0015" contype="2" conaffinity="1"/>
 
         <!-- Fork -->
@@ -59,7 +59,7 @@
       </body>
 
       <body name="left_lower_arm" pos="0 0 -0.023">
-        <joint name="left_lower_arm_joint" pos="-0.0130 0.0225 0.0320" axis="0 -1 0" range="-0.04 0.79" limited="true" solreflimit="0.005 1" solimplimit="0.95 0.99 0.001" damping="0.02"/>
+        <joint name="left_lower_arm_joint" pos="-0.0130 0.0225 0.0320" axis="0 -1 0" range="-0.04 0.95" limited="true" solreflimit="0.005 1" solimplimit="0.95 0.99 0.001" damping="0.02"/>
         <geom type="mesh" mesh="left_lower_arm" pos="0 0 -0.001072" material="body_mat" mass="0.0015" contype="2" conaffinity="1"/>
       </body>
 
@@ -101,6 +101,6 @@
     <velocity name="left_front_motor" joint="front_left_wheel_joint" ctrlrange="-15.22 15.22" kv="1.0"/>
     <velocity name="right_front_motor" joint="front_right_wheel_joint" ctrlrange="-15.22 15.22" kv="1.0"/>
     <position name="head_motor" joint="base_to_head" ctrlrange="-0.44 0.78" kp="1"/>
-    <position name="lift_motor" joint="right_lower_arm_joint" ctrlrange="-0.20 0.79" kp="1" forcerange="-0.45 0.45"/>
+    <general name="lift_motor" joint="right_lower_arm_joint" ctrlrange="-0.20 0.79" gainprm="1 0 0" biasprm="0.16 -1 0" biastype="affine" forcerange="-0.45 0.45"/>
   </actuator>
 </mujoco>

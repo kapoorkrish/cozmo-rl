@@ -2,7 +2,7 @@ import numpy as np
 import glfw
 import mujoco
 
-from utils import HZ
+from utils import HZ, STATE_MIN
 
 WHEEL_R_MM = 13.14
 MAX_SPEED_MMPS = 200.0
@@ -46,9 +46,12 @@ class Control:
     def reset(self) -> None:
         """Reset control states."""
         self.v_cur = self.w_cur = 0.0
-        self.head_tgt = self.lift_tgt = 0.0
         self.left = self.right = 0.0
+        self.head_tgt = 0.0
+        self.lift_tgt = STATE_MIN[5]
+
         self.data.ctrl[:] = 0.0
+        self.data.ctrl[self.a_lift] = self.lift_tgt
 
     def apply(self, held: set[int], dt: float) -> None:
         """Map held keys to actuator commands for one timestep."""

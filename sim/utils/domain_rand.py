@@ -13,16 +13,16 @@ SURFACES = ("floor", "wall")
 REPEAT = {"floor": (4.0, 12.0), "wall": (6.0, 14.0)}
 TINT = 0.08
 
-LIGHT_ON_PROB = 0.8
-MIN_LIGHTS_ON = 2
+LIGHT_ON_PROB = 0.6
+MIN_LIGHTS_ON = 1
 AIM_SPREAD = 0.5
-BRIGHTNESS = (0.5, 0.9)
+BRIGHTNESS = (0.4, 0.9)
 WARMTH = 0.10
 SPECULAR = (0.0, 0.4)
-AMBIENT = (0.02, 0.10)
-SHADOW_PROB = 0.6
-HEADLIGHT_AMBIENT = (0.10, 0.25)
-HEADLIGHT_DIFFUSE = (0.15, 0.35)
+AMBIENT = (0.0, 0.05)
+SHADOW_PROB = 0.85
+HEADLIGHT_AMBIENT = (0.03, 0.12)
+HEADLIGHT_DIFFUSE = (0.05, 0.20)
 
 WHEELS = ("front_left_wheel", "front_right_wheel", "rear_left_wheel", "rear_right_wheel")
 FRICTION = (0.8, 1.3)

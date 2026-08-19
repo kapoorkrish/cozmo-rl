@@ -7,7 +7,7 @@ import numpy as np
 import pycozmo
 
 from hardware.utils.observer import CozmoObserver
-from constants import HZ
+from utils import HZ
 
 SCALE = 6
 
@@ -23,6 +23,8 @@ with pycozmo.connect() as cli:  # type: ignore
     while (obs := observer.get_obs()) is None:
         time.sleep(1 / HZ)
 
+    cli.set_lift_height(height=92)
+
     while True:
         obs = observer.get_obs()
 
@@ -36,7 +38,7 @@ with pycozmo.connect() as cli:  # type: ignore
 
         if cv2.waitKey(1) == 27:
             break
-
+        
         time.sleep(1 / HZ)
 
 cv2.destroyAllWindows()
