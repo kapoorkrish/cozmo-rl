@@ -58,6 +58,13 @@ class CozmoSim:
         xaxis = self.data.sensor("pose_xaxis").data
 
         return pose[0], pose[1], math.atan2(xaxis[1], xaxis[0])
+    
+    def _to_local_pos(self, x: float, y: float) -> tuple[float, float]:
+        """World xy to Cozmo's spawn frame."""
+        dx, dy = x - self.origin[0], y - self.origin[1]
+        cos, sin = math.cos(self.origin[2]), math.sin(self.origin[2])
+
+        return (dx * cos + dy * sin), (dx * -sin + dy * cos)
 
     def add_context(self, gl_context, mjr_context) -> None:
         """Register a context to receive randomized textures (used for teleop & video rendering)."""
@@ -115,15 +122,13 @@ class CozmoSim:
 
         # Convert world pose to local pose on Cozmo
         world_pose = self._get_world_pose()
-        dx = world_pose[0] - self.origin[0]
-        dy = world_pose[1] - self.origin[1]
-        local_x = dx * math.cos(self.origin[2]) + dy * math.sin(self.origin[2])
-        local_y = -dx * math.sin(self.origin[2]) + dy * math.cos(self.origin[2])
+        pose_x, pose_y = self._to_local_pos(world_pose[0], world_pose[1])
+        cube_x, cube_y = self._to_local_pos(cube[0], cube[1])
         d_theta = world_pose[2] - self.origin[2]
 
         return {
-            "pose_x": local_x * 1000.0,
-            "pose_y": local_y * 1000.0,
+            "pose_x": pose_x * 1000.0,
+            "pose_y": pose_y * 1000.0,
             "pose_angle": math.atan2(math.sin(d_theta), math.cos(d_theta)),
             "lwheel": d.sensor("lwheel_speed").data[0],
             "rwheel": d.sensor("rwheel_speed").data[0],
@@ -133,8 +138,8 @@ class CozmoSim:
             "accel_y": accel[1],
             "accel_z": accel[2],
             # Privileged sim info
-            "cube_x": cube[0] * 1000.0,
-            "cube_y": cube[1] * 1000.0,
+            "cube_x": cube_x * 1000.0,
+            "cube_y": cube_y * 1000.0,
             "cube_z": cube[2] * 1000.0,
             "step": self.step_count,
         }
