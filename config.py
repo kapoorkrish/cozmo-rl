@@ -1,8 +1,8 @@
 """Configure task and hyperparameters."""
 
-from train.tasks.lift_cube import LiftCube
+from train.tasks.touch_cube import TouchCube
 
-TASK = LiftCube()
+TASK = TouchCube()
 
 # Train: Behavioral Cloning (bc)
 EPOCHS = 30

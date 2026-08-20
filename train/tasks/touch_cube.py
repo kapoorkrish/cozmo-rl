@@ -5,17 +5,18 @@ from train.tasks.task import Task
 from utils import HZ
 
 
-class LiftCube(Task):
-    """Cozmo should align with a cube, drive to it, and lift it off the ground."""
+class TouchCube(Task):
+    """Cozmo should align with a cube and drive into it."""
 
     # Max for one sec / frame rate = max for one step
     max_dist = 200.0 / HZ
-    max_lift = 45.0
+
+    # Cube accel deviation to count as a touch
+    accel_threshold = 0.3
 
     # Weights for reward function
     distance_prog_mult = 0.2
     align_prog_mult = 2
-    lift_prog_mult = 5
     success_bonus = 50
     time_penalty = 0.01
 
@@ -29,23 +30,27 @@ class LiftCube(Task):
 
         return float(heading @ to_cube / (np.linalg.norm(to_cube) + 1e-6))
 
-    def _cube_lift_height(self, state: dict[str, float]) -> float:
-        return state["cube_z"] - self.start_cube_z
+    def _delta_accel(self, state: dict[str, float]) -> float:
+        accel = np.array([state["accel_x"], state["accel_y"], state["accel_z"]])
+
+        return float(np.linalg.norm(accel - self.start_accel))
+
+    def _cube_touched(self, state: dict[str, float]) -> bool:
+        return self._delta_accel(state) > self.accel_threshold
 
     @override
-    def get_fixed_actions(self):
-        # Keep head position constant
-        return {3: 0.0}
+    def get_fixed_actions(self) -> dict[int, float]:
+        # Keep lift down and head level
+        return {2: -0.20, 3: 0.0}
 
     @override
     def reset(self, sim):
         state = sim.get_raw_state()
 
-        self.start_cube_z = state["cube_z"]
+        self.start_accel = np.array([state["accel_x"], state["accel_y"], state["accel_z"]])
 
         self.prev_distance = self._distance_to_cube(state)
         self.prev_align = self._cube_alignment(state)
-        self.prev_lift = 0.0
 
     @override
     def reward(self, sim, action):
@@ -61,23 +66,16 @@ class LiftCube(Task):
         align_prog = align - self.prev_align
         self.prev_align = align
 
-        # Cube lift progress
-        lift = self._cube_lift_height(state)
-        lift_prog = lift - self.prev_lift
-        self.prev_lift = lift
-
         reward = ((distance_prog / self.max_dist) * self.distance_prog_mult
                 + align_prog                      * self.align_prog_mult
-                + (lift_prog / self.max_lift)     * self.lift_prog_mult
                 - self.time_penalty)
 
-        if lift > self.max_lift:
+        # Big bonus for reaching objective
+        if self._cube_touched(state):
             reward += self.success_bonus
 
         return reward
 
     @override
     def do_terminate(self, sim):
-        state = sim.get_raw_state()
-
-        return self._cube_lift_height(state) > self.max_lift
+        return self._cube_touched(sim.get_raw_state())
