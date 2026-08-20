@@ -1,5 +1,6 @@
 import pycozmo
 
+import math
 import numpy as np
 from PIL import Image
 import time
@@ -87,7 +88,8 @@ class CozmoObserver:
             [
                 robot.pose_x,
                 robot.pose_y,
-                robot.pose_angle_rad,
+                math.sin(robot.pose_angle_rad),
+                math.cos(robot.pose_angle_rad),
                 robot.lwheel_speed_mmps / WHEEL_RADIUS,
                 robot.rwheel_speed_mmps / WHEEL_RADIUS,
                 robot.lift_height_mm, # This is actually angle reported by pycozmo

@@ -10,7 +10,7 @@ with pycozmo.connect() as cli: # type: ignore
     cli.add_handler(pycozmo.protocol_encoder.RobotState, observer._on_robot_state)
     cli.add_handler(pycozmo.protocol_encoder.ObjectAccel, observer._on_object_accel)
     cli.add_handler(pycozmo.event.EvtNewRawCameraImage, observer._on_camera)
-    cli.enable_camera(enable=True, color=False)
+    # cli.enable_camera(enable=True, color=False)
 
     observer.connect_cube(cli, pycozmo.protocol_encoder.ObjectType.Block_LIGHTCUBE1)
 

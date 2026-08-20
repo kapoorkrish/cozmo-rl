@@ -48,7 +48,7 @@ class Control:
         self.v_cur = self.w_cur = 0.0
         self.left = self.right = 0.0
         self.head_tgt = 0.0
-        self.lift_tgt = STATE_MIN[5]
+        self.lift_tgt = STATE_MIN[6]
 
         self.data.ctrl[:] = 0.0
         self.data.ctrl[self.a_lift] = self.lift_tgt

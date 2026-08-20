@@ -85,12 +85,12 @@ class CozmoSim:
         self.randomizer.randomize()
 
         # Match default joint and actuator positions with reality
-        lift_qpos = STATE_MIN[5] + 0.16
+        lift_qpos = STATE_MIN[6] + 0.16
         self.data.qpos[self.model.joint("right_upper_arm_joint").qposadr] = lift_qpos
         self.data.qpos[self.model.joint("left_upper_arm_joint").qposadr] = lift_qpos
         self.data.qpos[self.model.joint("right_lower_arm_joint").qposadr] = lift_qpos
         self.data.qpos[self.model.joint("left_lower_arm_joint").qposadr] = lift_qpos
-        self.data.ctrl[self.model.actuator("lift_motor").id] = STATE_MIN[5]
+        self.data.ctrl[self.model.actuator("lift_motor").id] = STATE_MIN[6]
 
         mujoco.mj_forward(self.model, self.data)
         self.step_count = 0
@@ -154,7 +154,8 @@ class CozmoSim:
                 [
                     state["pose_x"],
                     state["pose_y"],
-                    state["pose_angle"],
+                    math.sin(state["pose_angle"]),
+                    math.cos(state["pose_angle"]),
                     state["lwheel"],
                     state["rwheel"],
                     state["lift"],

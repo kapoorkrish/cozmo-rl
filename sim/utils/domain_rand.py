@@ -35,7 +35,10 @@ CAM_NOISE = (2.0, 10.0)
 CAM_FLICKER = 3.0
 
 WHEELS = ("front_left_wheel", "front_right_wheel", "rear_left_wheel", "rear_right_wheel")
-FRICTION = (0.8, 1.3)
+FRICTION = (1.1, 1.35)
+WHEEL_SCALE = (0.97, 1.03)
+WHEEL_BIAS = 0.02
+ARMATURE_SCALE = (0.9, 1.1)
 
 
 class DomainRandomizer:
@@ -45,7 +48,7 @@ class DomainRandomizer:
                  model: mujoco.MjModel, data: mujoco.MjData,
                  contexts: tuple = (),
                  seed: int | None = None):
-        
+
         self.model = model
         self.data = data
         self.rng = np.random.default_rng(seed)
@@ -69,6 +72,18 @@ class DomainRandomizer:
             g for g in range(model.ngeom)
             if mj_id2name(model, mujoco.mjtObj.mjOBJ_BODY, model.geom_bodyid[g]) in WHEELS
         ]
+
+        # Nominal drivetrain values, captured once so randomization never compounds
+        self.left_geoms = {
+            g for g in self.wheel_geoms
+            if "_left_" in mj_id2name(model, mujoco.mjtObj.mjOBJ_BODY, model.geom_bodyid[g])
+        }
+        self.wheel_radii = {g: float(model.geom_size[g, 0]) for g in self.wheel_geoms}
+        self.wheel_armature = {}
+
+        for w in WHEELS:
+            dof = int(model.joint(f"{w}_joint").dofadr[0])
+            self.wheel_armature[dof] = float(model.dof_armature[dof])
 
         self.cube_geoms = [mj_name2id(model, mujoco.mjtObj.mjOBJ_GEOM, f"c{i + 1}_cube_visual")
                            for i in range(len(self.cube_joints))]
@@ -186,6 +201,20 @@ class DomainRandomizer:
         for g in [self.floor_geom] + self.wheel_geoms:
             self.model.geom_friction[g, 0] = mu
 
+    # Drivetrain
+    def randomize_drivetrain(self) -> None:
+        """Randomize wheel size, drive inertia, and left/right imbalance."""
+        model, rng = self.model, self.rng
+
+        scale, bias = rng.uniform(*WHEEL_SCALE), rng.uniform(-WHEEL_BIAS, WHEEL_BIAS)
+        for g, radius in self.wheel_radii.items():
+            side = 1.0 + bias if g in self.left_geoms else 1.0 - bias
+            model.geom_size[g, 0] = radius * scale * side
+
+        inertia = rng.uniform(*ARMATURE_SCALE)
+        for dof, nominal in self.wheel_armature.items():
+            model.dof_armature[dof] = nominal * inertia
+
     # Spawn locations and orientations
     def _get_spawns(self, n: int, radius: tuple[float, float]) -> list[np.ndarray]:
         """Get spawns for n entities within a given radius range."""
@@ -193,7 +222,7 @@ class DomainRandomizer:
         while len(out) < n:
             r, th = self.rng.uniform(*radius), self.rng.uniform(0, 2 * np.pi)
             p = np.array([r * np.cos(th), r * np.sin(th)])
-            
+
             if all(np.linalg.norm(p - q) > SPAWN_GAP for q in out):
                 out.append(p)
 
@@ -218,4 +247,5 @@ class DomainRandomizer:
         self.randomize_lights()
         self.randomize_camera()
         self.randomize_friction()
+        self.randomize_drivetrain()
         self.randomize_spawns()

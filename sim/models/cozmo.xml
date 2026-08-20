@@ -64,24 +64,24 @@
       </body>
 
       <!-- Wheels -->
-      <body name="front_left_wheel" pos="0.03 0.024 -0.012" quat="0.707107 -0.707107 0 0">
-        <joint name="front_left_wheel_joint"  pos="0 0 0" axis="0 0 1" armature="0.001" damping="0.02"/>
-        <geom size="0.01314 0.00583695" type="cylinder" material="wheel_mat" friction="1.0 0.005 0.0001" mass="0.004" contype="2" conaffinity="1"/>
+      <body name="front_left_wheel" pos="0.03 0.0276 -0.012" quat="0.707107 -0.707107 0 0">
+        <joint name="front_left_wheel_joint"  pos="0 0 0" axis="0 0 1" armature="0.250" damping="0.005"/>
+        <geom size="0.013942 0.00583695" type="cylinder" material="wheel_mat" friction="1.2 0.005 0.0001" mass="0.004" contype="2" conaffinity="1"/>
       </body>
 
-      <body name="front_right_wheel" pos="0.03 -0.024 -0.012" quat="0.707107 -0.707107 0 0">
-        <joint name="front_right_wheel_joint" pos="0 0 0" axis="0 0 1" armature="0.001" damping="0.02"/>
-        <geom size="0.01314 0.00583695" type="cylinder" material="wheel_mat" friction="1.0 0.005 0.0001" mass="0.004" contype="2" conaffinity="1"/>
+      <body name="front_right_wheel" pos="0.03 -0.0276 -0.012" quat="0.707107 -0.707107 0 0">
+        <joint name="front_right_wheel_joint" pos="0 0 0" axis="0 0 1" armature="0.250" damping="0.005"/>
+        <geom size="0.013942 0.00583695" type="cylinder" material="wheel_mat" friction="1.2 0.005 0.0001" mass="0.004" contype="2" conaffinity="1"/>
       </body>
 
-      <body name="rear_left_wheel" pos="-0.017 0.024 -0.0151707" quat="0.707107 -0.707107 0 0">
-        <joint name="rear_left_wheel_joint" pos="0 0 0" axis="0 0 1" armature="0.001" damping="0.02"/>
-        <geom size="0.008995 0.00583695" type="cylinder" material="wheel_mat" friction="1.0 0.005 0.0001" mass="0.004" contype="2" conaffinity="1"/>
+      <body name="rear_left_wheel" pos="-0.017 0.0276 -0.0151707" quat="0.707107 -0.707107 0 0">
+        <joint name="rear_left_wheel_joint" pos="0 0 0" axis="0 0 1" armature="0.250" damping="0.005"/>
+        <geom size="0.009544 0.00583695" type="cylinder" material="wheel_mat" friction="1.2 0.005 0.0001" mass="0.004" contype="2" conaffinity="1"/>
       </body>
 
-      <body name="rear_right_wheel" pos="-0.017 -0.024 -0.0151707" quat="0.707107 -0.707107 0 0">
-        <joint name="rear_right_wheel_joint" pos="0 0 0" axis="0 0 1" armature="0.001" damping="0.02"/>
-        <geom size="0.008995 0.00583695" type="cylinder" material="wheel_mat" friction="1.0 0.005 0.0001" mass="0.004" contype="2" conaffinity="1"/>
+      <body name="rear_right_wheel" pos="-0.017 -0.0276 -0.0151707" quat="0.707107 -0.707107 0 0">
+        <joint name="rear_right_wheel_joint" pos="0 0 0" axis="0 0 1" armature="0.250" damping="0.005"/>
+        <geom size="0.009544 0.00583695" type="cylinder" material="wheel_mat" friction="1.2 0.005 0.0001" mass="0.004" contype="2" conaffinity="1"/>
       </body>
     </body>
   </worldbody>
@@ -98,8 +98,8 @@
   </equality>
 
   <actuator>
-    <velocity name="left_front_motor" joint="front_left_wheel_joint" ctrlrange="-15.22 15.22" kv="1.0"/>
-    <velocity name="right_front_motor" joint="front_right_wheel_joint" ctrlrange="-15.22 15.22" kv="1.0"/>
+    <velocity name="left_front_motor" joint="front_left_wheel_joint" ctrlrange="-15.22 15.22" kv="3.0"/>
+    <velocity name="right_front_motor" joint="front_right_wheel_joint" ctrlrange="-15.22 15.22" kv="3.0"/>
     <position name="head_motor" joint="base_to_head" ctrlrange="-0.44 0.78" kp="1"/>
     <general name="lift_motor" joint="right_lower_arm_joint" ctrlrange="-0.20 0.79" gainprm="1 0 0" biasprm="0.16 -1 0" biastype="affine" forcerange="-0.45 0.45"/>
   </actuator>
