@@ -23,7 +23,7 @@ from sim.utils.teleop.window import Window
 from utils import HZ
 
 SHOW_FRAMES = True
-FRAME_WINDOW = (960, 240)
+SCALE = 6
 
 
 sim = CozmoSim()
@@ -40,8 +40,7 @@ sim.add_context(window, window.mjr_context)
 reset()
 
 if SHOW_FRAMES:
-    cv2.namedWindow("obs", cv2.WINDOW_NORMAL)
-    cv2.resizeWindow("obs", *FRAME_WINDOW)
+    cv2.namedWindow("obs")
 
 print(__doc__)
 next_wall = time.perf_counter()
@@ -54,7 +53,8 @@ while not window.should_close():
     window.render(control.status_lines() + recorder.status_lines())
 
     if SHOW_FRAMES:
-        cv2.imshow("obs", np.hstack(sim.get_frames()))
+        strip = np.hstack(sim.get_frames())
+        cv2.imshow("obs", cv2.resize(strip, None, fx=SCALE, fy=SCALE, interpolation=cv2.INTER_NEAREST))
         cv2.waitKey(1)
 
     next_wall += (1 / HZ)

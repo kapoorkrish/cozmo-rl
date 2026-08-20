@@ -27,14 +27,16 @@ STATE_MAX = np.array(
      15.22, 15.22, 0.79, 0.78,
      4.1, 4.1, 4.1]
 )
-# Stack x height x width
+# Camera stream resolution and downsampling dim (stack x height x width)
+SENSOR_DIM = (240, 320)
 VISION_DOWNSAMPLE = 4
-VISION_DIM = (3, 240 // VISION_DOWNSAMPLE, 320 // VISION_DOWNSAMPLE)
+VISION_DIM = (3, SENSOR_DIM[0] // VISION_DOWNSAMPLE, SENSOR_DIM[1] // VISION_DOWNSAMPLE)
 
 # Spawn randomization
 COZMO_SPAWN_RADIUS = (0.0, 0.15)
 CUBE_SPAWN_RADIUS = (0.20, 0.40)
 SPAWN_GAP = 0.09
+
 
 def normalize_state(state: np.ndarray) -> np.ndarray:
     """Physical units state vector -> [-1, 1]."""
@@ -53,6 +55,7 @@ def denormalize_action(action: np.ndarray) -> np.ndarray:
     """[-1, 1] -> physical units action vector."""
     return (action + 1.0) / 2.0 * (ACTION_MAX - ACTION_MIN) + ACTION_MIN
 
+
 def lift_rad_to_mm(rad: float) -> float:
     """Convert lift angle in radians to height in mm for pycozmo command."""
     return 45.12 + 66.0 * np.sin(rad)
@@ -60,3 +63,11 @@ def lift_rad_to_mm(rad: float) -> float:
 def wheel_rad_to_mm(rad: float) -> float:
     """Convert wheel angular velocity in rad/s to translational velocity in mm/s."""
     return rad * WHEEL_RADIUS
+
+
+def downsample(frame: np.ndarray) -> np.ndarray:
+    """Sensor resolution frame -> observation resolution by area averaging."""
+    n = VISION_DOWNSAMPLE
+    h, w = frame.shape
+
+    return frame.reshape(h // n, n, w // n, n).mean(axis=(1, 3)).round().astype(np.uint8)

@@ -2,12 +2,11 @@ import pycozmo
 
 import math
 import numpy as np
-from PIL import Image
 import time
 from collections import deque
 import threading
 
-from utils import VISION_DIM, WHEEL_RADIUS, normalize_state
+from utils import VISION_DIM, WHEEL_RADIUS, downsample, normalize_state
 
 CUBE_1G = 31
 
@@ -31,11 +30,10 @@ class CozmoObserver:
                 self.cube_accel = (pkt.accel_x, pkt.accel_y, pkt.accel_z)
 
     def _on_camera(self, cli, image) -> None:
-        """Keep only the newest frame. The stack is sampled on the control tick."""
-        small = image.convert("L").resize((VISION_DIM[2], VISION_DIM[1]), Image.BOX)
+        sensor = np.asarray(image.convert("L"), dtype=np.uint8)
 
         with self.lock:
-            self.latest_frame = np.asarray(small, dtype=np.uint8)
+            self.latest_frame = downsample(sensor)
 
     def _find_cube(self, cli, cube: pycozmo.protocol_encoder.ObjectType, timeout: float) -> int:
         deadline = time.time() + timeout
@@ -98,7 +96,7 @@ class CozmoObserver:
             ],
             dtype=np.float32
         )
-        
+
         return {
             "state": normalize_state(state),
             "vision": images

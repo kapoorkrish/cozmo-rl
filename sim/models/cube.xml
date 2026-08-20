@@ -13,9 +13,9 @@
     <texture name="cube1_texture" type="cube" file="cube/cube1.png" gridsize="3 4" gridlayout=".R..FDBU.L.."/>
     <texture name="cube2_texture" type="cube" file="cube/cube2.png" gridsize="3 4" gridlayout=".R..FDBU.L.."/>
     <texture name="cube3_texture" type="cube" file="cube/cube3.png" gridsize="3 4" gridlayout=".R..FDBU.L.."/>
-    <material name="cube1_material" texture="cube1_texture" specular="0.3" shininess="0.4"/>
-    <material name="cube2_material" texture="cube2_texture" specular="0.3" shininess="0.4"/>
-    <material name="cube3_material" texture="cube3_texture" specular="0.3" shininess="0.4"/>
+    <material name="cube1_material" texture="cube1_texture" specular="0.3" shininess="0.8"/>
+    <material name="cube2_material" texture="cube2_texture" specular="0.3" shininess="0.8"/>
+    <material name="cube3_material" texture="cube3_texture" specular="0.3" shininess="0.8"/>
   </asset>
 
   <worldbody>

@@ -1,43 +1,50 @@
 import glob
 import os
 
+import cv2
 import numpy as np
 import mujoco
 from mujoco import mj_name2id, mj_id2name
 from PIL import Image, ImageOps
 
-from utils import COZMO_SPAWN_RADIUS, CUBE_SPAWN_RADIUS, SPAWN_GAP, VISION_DIM
+from utils import COZMO_SPAWN_RADIUS, CUBE_SPAWN_RADIUS, SENSOR_DIM, SPAWN_GAP
 
 TEXTURE_DIR = "./sim/assets/textures"
 SURFACES = ("floor", "wall")
 REPEAT = {"floor": (4.0, 12.0), "wall": (6.0, 14.0)}
 TINT = 0.08
 
-LIGHT_ON_PROB = 0.6
-MIN_LIGHTS_ON = 1
+LIGHT_ON_PROB = 0.7
+MIN_LIGHTS_ON = 2
 AIM_SPREAD = 0.5
-BRIGHTNESS = (0.4, 0.9)
+BRIGHTNESS = (0.5, 1.0)
 WARMTH = 0.10
 SPECULAR = (0.0, 0.4)
 AMBIENT = (0.0, 0.05)
 SHADOW_PROB = 0.85
-HEADLIGHT_AMBIENT = (0.03, 0.12)
+HEADLIGHT_AMBIENT = (0.10, 0.30)
 HEADLIGHT_DIFFUSE = (0.05, 0.20)
+HEADLAMP_DIFFUSE = (0.4, 0.4)
+
+# Cube reflectance to simulate varying glare
+CUBE_SPECULAR = (0.6, 1.0)
+CUBE_SHININESS = (0.85, 0.98)
 
 # Camera setting randomness per episode
-CAM_GAIN = (0.75, 1.25)
-CAM_BIAS = (-25.0, 25.0)
-CAM_GAMMA = (0.8, 1.3)
-CAM_VIGNETTE = (0.0, 0.4)
-CAM_FPN = (0.0, 4.0)
-CAM_NOISE = (2.0, 10.0)
+CAM_GAIN = (0.9, 1.3)
+CAM_BIAS = (-20.0, 10.0)
+CAM_GAMMA = (1.0, 1.5)
+CAM_VIGNETTE = (0.1, 0.5)
+CAM_FPN = (0.0, 3.0)
+CAM_NOISE = (1.0, 6.0)
+JPEG_QUALITY = (25, 60)
 # Camera setting randomness per frame
-CAM_FLICKER = 3.0
+CAM_FLICKER = 1.5
 
 WHEELS = ("front_left_wheel", "front_right_wheel", "rear_left_wheel", "rear_right_wheel")
 FRICTION = (1.1, 1.35)
 WHEEL_SCALE = (0.97, 1.03)
-WHEEL_BIAS = 0.02
+WHEEL_BIAS = 0.005
 ARMATURE_SCALE = (0.9, 1.1)
 
 
@@ -63,6 +70,7 @@ class DomainRandomizer:
 
         floor = mj_name2id(model, mujoco.mjtObj.mjOBJ_GEOM, "floor")
         ceil = mj_name2id(model, mujoco.mjtObj.mjOBJ_GEOM, "ceiling")
+        self.head_lamp = mj_name2id(model, mujoco.mjtObj.mjOBJ_LIGHT, "head_lamp")
 
         self.half = float(model.geom_size[floor, 0])
         self.height = float(model.geom_pos[ceil, 2]) if ceil >= 0 else 1.5
@@ -131,6 +139,8 @@ class DomainRandomizer:
         picks = rng.choice(3, len(self.cube_geoms), replace=False)
         for gid, mats, j in zip(self.cube_geoms, self.cube_mats, picks):
             model.geom_matid[gid] = mats[j]
+            model.mat_specular[mats[j]] = rng.uniform(*CUBE_SPECULAR)
+            model.mat_shininess[mats[j]] = rng.uniform(*CUBE_SHININESS)
 
     # Lighting
     def randomize_lights(self) -> None:
@@ -146,6 +156,10 @@ class DomainRandomizer:
             on[rng.choice(off, need - on.sum(), replace=False)] = True
 
         for i in range(model.nlight):
+            if i == self.head_lamp:
+                model.light_diffuse[i] = rng.uniform(*HEADLAMP_DIFFUSE)
+                continue
+
             model.light_active[i] = bool(on[i])
             if not on[i]:
                 continue
@@ -176,7 +190,7 @@ class DomainRandomizer:
         self.cam_lut = np.clip(ramp ** rng.uniform(*CAM_GAMMA) * 255.0 * rng.uniform(*CAM_GAIN)
                                + rng.uniform(*CAM_BIAS), 0, 255).astype(np.uint8)
 
-        h, w = VISION_DIM[1], VISION_DIM[2]
+        h, w = SENSOR_DIM
         ys = np.linspace(-1.0, 1.0, h, dtype=np.float32)[:, None]
         xs = np.linspace(-1.0, 1.0, w, dtype=np.float32)[None, :]
 
@@ -185,7 +199,7 @@ class DomainRandomizer:
         self.cam_noise = rng.uniform(*CAM_NOISE)
 
     def augment(self, frame: np.ndarray) -> np.ndarray:
-        """Apply camera response and per-frame sensor noise to a rendered frame."""
+        """Apply camera response and per-frame sensor noise at sensor resolution."""
         rng = self.rng
 
         out = self.cam_lut[frame] * self.cam_gain_map + self.cam_fpn
@@ -193,7 +207,14 @@ class DomainRandomizer:
 
         return np.clip(out, 0, 255).astype(np.uint8)
 
-    # Friction
+    def compress(self, frame: np.ndarray) -> np.ndarray:
+        """Convert to JPEG to match cozmo low-quality stream."""
+        quality = int(self.rng.integers(*JPEG_QUALITY))
+        _, buf = cv2.imencode(".jpg", frame, [int(cv2.IMWRITE_JPEG_QUALITY), quality])
+
+        return cv2.imdecode(buf, cv2.IMREAD_GRAYSCALE)
+
+    # Drivetrain
     def randomize_friction(self) -> None:
         """Randomize friction between floor and wheels."""
         mu = self.rng.uniform(*FRICTION)
@@ -201,7 +222,6 @@ class DomainRandomizer:
         for g in [self.floor_geom] + self.wheel_geoms:
             self.model.geom_friction[g, 0] = mu
 
-    # Drivetrain
     def randomize_drivetrain(self) -> None:
         """Randomize wheel size, drive inertia, and left/right imbalance."""
         model, rng = self.model, self.rng

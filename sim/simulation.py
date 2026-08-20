@@ -3,13 +3,13 @@ import mujoco
 import math
 import numpy as np
 from collections import deque
-from skimage.color import rgb2gray
 
 from sim.utils.domain_rand import DomainRandomizer
 from sim.utils.world import build_model
-from utils import HZ, VISION_DIM, STATE_MIN, normalize_state
+from utils import HZ, SENSOR_DIM, VISION_DIM, STATE_MIN, downsample, normalize_state
 
 ACTUATORS = ("left_front_motor", "right_front_motor", "lift_motor", "head_motor")
+GRAY = np.array([0.2125, 0.7154, 0.0721], dtype=np.float32)
 
 
 class CozmoSim:
@@ -23,7 +23,7 @@ class CozmoSim:
         self.cam_option = mujoco.MjvOption()
         self.cam_option.geomgroup[1] = 0
 
-        self.renderer = mujoco.Renderer(self.model, VISION_DIM[1], VISION_DIM[2])
+        self.renderer = mujoco.Renderer(self.model, *SENSOR_DIM)
         self.video_renderer = None
 
         self.randomizer = DomainRandomizer(self.model, self.data,
@@ -42,15 +42,20 @@ class CozmoSim:
 
         self.frames = deque(maxlen=VISION_DIM[0])
 
+    def _capture(self, sensor: np.ndarray) -> np.ndarray:
+        """Raw render -> camera noise -> compression -> downsample."""
+        return downsample(self.randomizer.compress(self.randomizer.augment(sensor)))
+
     def _push_frame(self) -> None:
         """Render Cozmo's camera into the frame stack."""
         self.renderer.update_scene(self.data, camera="cozmo_cam", scene_option=self.cam_option)
-        grayscale = (rgb2gray(self.renderer.render()) * 255).astype(np.uint8)
-        self.frames.append(self.randomizer.augment(grayscale))
+        sensor = (self.renderer.render() @ GRAY).astype(np.uint8)
+
+        self.frames.append(self._capture(sensor))
 
         # Push frame copies until stack is full
         while len(self.frames) < self.frames.maxlen:
-            self.frames.append(self.randomizer.augment(grayscale))
+            self.frames.append(self._capture(sensor))
 
     def _get_world_pose(self) -> tuple[float, float, float]:
         """World pose of cozmo (x, y, angle) in meters and radians."""
@@ -107,7 +112,7 @@ class CozmoSim:
         """Take substeps according to refresh rate, equating to one timestep."""
         for _ in range(self.substeps):
             mujoco.mj_step(self.model, self.data)
-        
+
         self.step_count += 1
         self._push_frame()
 
@@ -177,6 +182,6 @@ class CozmoSim:
         if self.video_renderer is None:
             self.video_renderer = mujoco.Renderer(self.model, 240, 320)
             self.add_context(self.video_renderer._gl_context, self.video_renderer._mjr_context)
-        
+
         self.video_renderer.update_scene(self.data, camera="cozmo_chase")
         return self.video_renderer.render()
