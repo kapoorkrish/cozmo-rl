@@ -9,6 +9,7 @@ from stable_baselines3.common.vec_env import SubprocVecEnv, VecMonitor
 from sim.simulation import CozmoSim
 from train.utils.load_model import load_checkpoint, load_policy, make_checkpoint
 from train.utils.environment import CozmoEnv
+from train.utils.mask_policy import MaskedMultiInputPolicy
 
 from utils import PPO_DIR
 from config import INIT_POLICY, NUM_ENVS, ROLLOUT, TASK, TIMESTEPS, VIDEO_EVERY
@@ -35,8 +36,9 @@ if __name__ == "__main__":
 
     if model is None:
         model = PPO(
-            "MultiInputPolicy",
+            MaskedMultiInputPolicy,
             env,
+            policy_kwargs={"action_mask": TASK.get_action_mask()},
             n_steps=ROLLOUT // NUM_ENVS,
             batch_size=64,
             learning_rate=3e-4,

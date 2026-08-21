@@ -20,10 +20,18 @@ class Task(ABC):
         {action_id: action_value}"""
         return {}
 
+    # Utility functions, do not override these
     @final
     def __str__(self) -> str:
         """Class name in snake_case used for paths and model names."""
         return re.sub(r"(?<!^)(?=[A-Z])", "_", type(self).__name__).lower()
+    
+    @final
+    def get_action_mask(self) -> np.ndarray:
+        """Defines fixed actions mask for policy to avoid training them."""
+        mask = np.ones(len(ACTION_MIN), dtype=np.float32)
+        mask[list(self.get_fixed_actions())] = 0.0
+        return mask
 
     @final
     def map_action(self, action: np.ndarray) -> np.ndarray:

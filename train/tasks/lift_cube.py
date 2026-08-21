@@ -35,7 +35,7 @@ class LiftCube(Task):
     @override
     def get_fixed_actions(self):
         # Keep head position constant
-        return {3: 0.0}
+        return {3: -0.15}
 
     @override
     def reset(self, sim):

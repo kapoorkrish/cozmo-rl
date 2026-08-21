@@ -40,8 +40,8 @@ class TouchCube(Task):
 
     @override
     def get_fixed_actions(self) -> dict[int, float]:
-        # Keep lift down and head level
-        return {2: -0.20, 3: 0.0}
+        # Keep lift down and head constant
+        return {2: -0.20, 3: -0.15}
 
     @override
     def reset(self, sim):
