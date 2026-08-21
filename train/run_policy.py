@@ -11,7 +11,7 @@ from train.utils.environment import CozmoEnv
 from config import TASK
 from utils import HZ
 
-MODEL = f"./models/bc/{TASK!s}"
+MODEL = f"./models/ppo/{TASK!s}"
 NUM_EPISODES = 5
 
 
