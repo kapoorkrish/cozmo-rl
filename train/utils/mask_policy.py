@@ -7,16 +7,15 @@ from typing import override
 
 
 class MaskedDiagGaussian(DiagGaussianDistribution):
-    """Gaussian over every action dim, but masked dims contribute nothing to the loss."""
+    """Gaussian over every action dim, but masked dims do not contribute to loss."""
 
     def __init__(self, action_dim: int, mask: th.Tensor):
         super().__init__(action_dim)
 
         self.mask = mask
-        self.n_free = float(mask.sum())
 
-    def _apply_mask(self, x: th.Tensor) -> th.Tensor:
-        return x * self.mask.to(x.device)
+    def _apply_mask(self, vector: th.Tensor) -> th.Tensor:
+        return vector * self.mask.to(vector.device)
 
     @override
     def log_prob(self, actions: th.Tensor) -> th.Tensor:
@@ -24,11 +23,10 @@ class MaskedDiagGaussian(DiagGaussianDistribution):
 
     @override
     def entropy(self) -> th.Tensor:
-        # Per-dim mean so ent_coef means the same thing across tasks with different free dims
-        return sum_independent_dims(self._apply_mask(self.distribution.entropy())) / self.n_free
+        return sum_independent_dims(self._apply_mask(self.distribution.entropy()))
 
 class MaskedMultiInputPolicy(MultiInputActorCriticPolicy):
-    """Keeps the full canonical action head so every task shares one parameter shape."""
+    """Modifies action_dist to use masked gaussian to prevent fixed actions from affecting policy."""
 
     def __init__(self, *args, action_mask, **kwargs):
         super().__init__(*args, **kwargs)
