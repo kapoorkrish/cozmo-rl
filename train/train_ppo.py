@@ -1,14 +1,17 @@
 """PPO training in environment using reward function defined in selected task."""
 
+import os
+
 from gymnasium.wrappers import RecordVideo
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import SubprocVecEnv, VecMonitor
 
 from sim.simulation import CozmoSim
-from train.utils.checkpoint import load_checkpoint, make_checkpoint
+from train.utils.load_model import load_checkpoint, load_policy, make_checkpoint
 from train.utils.environment import CozmoEnv
 
-from config import NUM_ENVS, ROLLOUT, TASK, TIMESTEPS, VIDEO_EVERY
+from utils import PPO_DIR
+from config import INIT_POLICY, NUM_ENVS, ROLLOUT, TASK, TIMESTEPS, VIDEO_EVERY
 
 MODEL_NAME = str(TASK)
 
@@ -40,9 +43,12 @@ if __name__ == "__main__":
             verbose=1,
         )
 
+        if INIT_POLICY:
+            load_policy(model, INIT_POLICY)
+
     model.learn(
         total_timesteps=TIMESTEPS - timesteps_done,
         callback=make_checkpoint(MODEL_NAME),
         reset_num_timesteps=False,
     )
-    model.save(f"./models/ppo/{MODEL_NAME}")
+    model.save(os.path.join(PPO_DIR, MODEL_NAME))

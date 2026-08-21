@@ -49,7 +49,7 @@ def stats(frames: np.ndarray) -> str:
     return f"mean {f.mean():5.1f}  std {f.std():5.1f}  edges {np.abs(np.diff(f, axis=-1)).mean():5.2f}"
 
 
-def main() -> None:
+def main():
     sim = CozmoSim()
     observer = CozmoObserver()
 

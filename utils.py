@@ -37,6 +37,9 @@ COZMO_SPAWN_RADIUS = (0.0, 0.15)
 CUBE_SPAWN_RADIUS = (0.20, 0.40)
 SPAWN_GAP = 0.09
 
+PPO_DIR = "./models/ppo"
+BC_DIR = "./models/bc"
+
 
 def normalize_state(state: np.ndarray) -> np.ndarray:
     """Physical units state vector -> [-1, 1]."""

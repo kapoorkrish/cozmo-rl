@@ -10,6 +10,7 @@ from stable_baselines3 import PPO
 from sim.simulation import CozmoSim
 from train.utils.environment import CozmoEnv
 
+from utils import BC_DIR
 from config import TASK, EPOCHS, BATCH_SIZE, LEARNING_RATE
 
 MODEL_NAME = str(TASK)
@@ -76,4 +77,4 @@ trainer = bc.BC(
 )
 trainer.train(n_epochs=EPOCHS)
 
-model.save(f"./models/bc/{MODEL_NAME}")
+model.save(f"{BC_DIR}/{MODEL_NAME}")

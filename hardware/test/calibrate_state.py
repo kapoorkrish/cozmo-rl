@@ -9,9 +9,11 @@ import pycozmo
 
 from hardware.utils.observer import CozmoObserver
 from sim.simulation import CozmoSim
-from utils import HZ, denormalize_action, denormalize_state, lift_rad_to_mm, wheel_rad_to_mm
+from utils import (HZ, denormalize_action, denormalize_state, lift_rad_to_mm, normalize_state,
+                   wheel_rad_to_mm)
 
 NOMINAL_FRICTION = 1.2
+FLUSH_TIME = 0.5
 
 STATE_LABELS = [
     "pose_x", "pose_y", "pose_sin", "pose_cos",
@@ -55,10 +57,22 @@ def build_scripted_actions() -> tuple[np.ndarray, dict[str, slice]]:
     return np.concatenate(actions, axis=0), spans
 
 
-def heading_deg(norm: np.ndarray) -> np.ndarray:
-    """Normalized state log -> continuous heading in degrees."""
-    phys = denormalize_state(norm)
+def to_initial_frame(phys: np.ndarray) -> np.ndarray:
+    """Re-expresses pose relative to the log's first sample."""
+    out = phys.copy()
+    sin0, cos0 = phys[0, 2], phys[0, 3]
+    dx, dy = phys[:, 0] - phys[0, 0], phys[:, 1] - phys[0, 1]
 
+    out[:, 0] = cos0 * dx + sin0 * dy
+    out[:, 1] = cos0 * dy - sin0 * dx
+    out[:, 2] = phys[:, 2] * cos0 - phys[:, 3] * sin0
+    out[:, 3] = phys[:, 3] * cos0 + phys[:, 2] * sin0
+
+    return out
+
+
+def heading_deg(phys: np.ndarray) -> np.ndarray:
+    """Physical state log -> continuous heading in degrees."""
     return np.degrees(np.unwrap(np.arctan2(phys[:, 2], phys[:, 3])))
 
 
@@ -84,10 +98,11 @@ def record_real(cli, observer: CozmoObserver, scripted: np.ndarray) -> tuple[np.
             stamps.append(time.perf_counter())
 
     except KeyboardInterrupt:
-        pass
+        print("\nInterrupted.")
 
     finally:
         cli.stop_all_motors()
+        time.sleep(FLUSH_TIME)
 
     return np.stack(log), (len(stamps) - 1) / (stamps[-1] - stamps[0])
 
@@ -109,14 +124,16 @@ def replay_sim(sim: CozmoSim, scripted: np.ndarray) -> np.ndarray:
 
 def report(real_norm: np.ndarray, sim_norm: np.ndarray, spans: dict[str, slice], rate: float) -> None:
     """Print the totals a policy accumulates and the per-channel gap."""
-    real_phys, sim_phys = denormalize_state(real_norm), denormalize_state(sim_norm)
-    real_deg, sim_deg = heading_deg(real_norm), heading_deg(sim_norm)
+    real_phys = to_initial_frame(denormalize_state(real_norm))
+    sim_phys = to_initial_frame(denormalize_state(sim_norm))
+    real_deg, sim_deg = heading_deg(real_phys), heading_deg(sim_phys)
 
-    diff, norm_diff = real_phys - sim_phys, real_norm - sim_norm
+    diff = real_phys - sim_phys
+    norm_diff = normalize_state(real_phys) - normalize_state(sim_phys)
     fwd, turn = spans["forward"], spans["turn"]
 
     # sin and cos are only interpretable together, as one angle
-    heading_err = np.abs((real_deg - sim_deg + 180) % 360 - 180)
+    heading_err = np.abs(real_deg - sim_deg)
 
     print(f"\nloop rate  {rate:5.1f} Hz  (target {HZ})")
 
@@ -135,7 +152,7 @@ def report(real_norm: np.ndarray, sim_norm: np.ndarray, spans: dict[str, slice],
               f"{np.ptp(real_phys[:, i]):9.3f} {norm_diff[:, i].mean(): 10.3f}")
 
 
-def main() -> None:
+def main():
     scripted, spans = build_scripted_actions()
     observer = CozmoObserver()
     sim = CozmoSim()
