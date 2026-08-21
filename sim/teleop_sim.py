@@ -38,6 +38,8 @@ recorder = Recorder(sim, reset)
 window = Window(sim.model, sim.data, recorder, reset)
 sim.add_context(window, window.mjr_context)
 reset()
+state = sim.get_raw_state()
+start_accel = np.linalg.norm([state["accel_x"], state["accel_y"], state["accel_z"]])
 
 if SHOW_FRAMES:
     cv2.namedWindow("obs")
@@ -49,6 +51,12 @@ while not window.should_close():
     control.apply(window.held, 1 / HZ)
     recorder.capture()
     sim.step_sim()
+
+    state = sim.get_raw_state()
+    print(state["accel_x"])
+    print(state["accel_y"])
+    print(state["accel_z"])
+    print(f"Norm diff: {np.linalg.norm([state["accel_x"], state["accel_y"], state["accel_z"]]) - start_accel}")
 
     window.render(control.status_lines() + recorder.status_lines())
 

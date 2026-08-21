@@ -12,7 +12,7 @@ class TouchCube(Task):
     max_dist = 200.0 / HZ
 
     # Cube accel deviation to count as a touch
-    accel_threshold = 0.3
+    accel_threshold = 0.2
 
     # Weights for reward function
     distance_prog_mult = 0.2

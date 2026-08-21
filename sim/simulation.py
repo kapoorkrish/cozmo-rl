@@ -10,6 +10,7 @@ from utils import HZ, SENSOR_DIM, VISION_DIM, STATE_MIN, downsample, normalize_s
 
 ACTUATORS = ("left_front_motor", "right_front_motor", "lift_motor", "head_motor")
 GRAY = np.array([0.2125, 0.7154, 0.0721], dtype=np.float32)
+SETTLE_STEPS = 3
 
 
 class CozmoSim:
@@ -97,7 +98,10 @@ class CozmoSim:
         self.data.qpos[self.model.joint("left_lower_arm_joint").qposadr] = lift_qpos
         self.data.ctrl[self.model.actuator("lift_motor").id] = STATE_MIN[6]
 
-        mujoco.mj_forward(self.model, self.data)
+        # Let cozmo and cubes settle on floor before measurements occur
+        for _ in range(SETTLE_STEPS * self.substeps):
+            mujoco.mj_step(self.model, self.data)
+        
         self.step_count = 0
         self.origin = self._get_world_pose()
 
