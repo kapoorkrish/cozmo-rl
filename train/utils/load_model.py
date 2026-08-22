@@ -6,6 +6,7 @@ import os
 from glob import glob
 
 from train.utils.environment import CozmoEnv
+from train.tasks.task import Task
 from utils import PPO_DIR
 from config import NUM_ENVS
 
@@ -27,9 +28,9 @@ def load_checkpoint(name: str, env: CozmoEnv) -> tuple[PPO | None, int]:
     model = PPO.load(latest, env=env)
     return model, model.num_timesteps
 
-def load_policy(model: PPO, name: str) -> None:
-    """Copies the policy weights of a previously trained model into model."""
-    path = os.path.join(PPO_DIR, f"{name}.zip")
+def load_policy(model: PPO, name: Task) -> None:
+    """Copies the policy parameters of a previously trained model into model."""
+    path = os.path.join(PPO_DIR, f"{name!s}.zip")
     data, params, _ = load_from_zip_file(path, device=model.device)
 
     for space in ("observation_space", "action_space"):
