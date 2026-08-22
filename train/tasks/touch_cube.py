@@ -16,9 +16,9 @@ class TouchCube(Task):
 
     # Weights for reward function
     distance_prog_mult = 0.2
-    align_prog_mult = 2
+    misalign_mult = 0.2
     success_bonus = 50
-    time_penalty = 0.01
+    time_penalty = 0.05
 
     def _distance_to_cube(self, state: dict[str, float]) -> float:
         return float(np.hypot(state["cube_x"] - state["pose_x"], state["cube_y"] - state["pose_y"]))
@@ -50,7 +50,6 @@ class TouchCube(Task):
         self.start_accel = np.array([state["accel_x"], state["accel_y"], state["accel_z"]])
 
         self.prev_distance = self._distance_to_cube(state)
-        self.prev_align = self._cube_alignment(state)
 
     @override
     def reward(self, sim, action):
@@ -61,13 +60,11 @@ class TouchCube(Task):
         distance_prog = self.prev_distance - distance
         self.prev_distance = distance
 
-        # Cube alignment progress
-        align = self._cube_alignment(state)
-        align_prog = align - self.prev_align
-        self.prev_align = align
+        # Cost for not facing the cube
+        misalign = (1.0 - self._cube_alignment(state)) / 2.0
 
         reward = ((distance_prog / self.max_dist) * self.distance_prog_mult
-                + align_prog                      * self.align_prog_mult
+                - misalign                        * self.misalign_mult
                 - self.time_penalty)
 
         # Big bonus for reaching objective

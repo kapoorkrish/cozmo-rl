@@ -36,6 +36,8 @@ class MaskedMultiInputPolicy(MultiInputActorCriticPolicy):
     def __init__(self, *args, fixed_actions: dict[int, float], **kwargs):
         super().__init__(*args, **kwargs)
 
+        fixed_actions = {int(dim): float(value) for dim, value in fixed_actions.items()}
+
         # Mask action distribution
         action_dim = int(np.prod(self.action_space.shape))
 

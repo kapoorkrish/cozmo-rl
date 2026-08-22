@@ -18,3 +18,5 @@ TIMESTEPS = 500_000
 NUM_ENVS = 4
 ROLLOUT = 2048
 VIDEO_EVERY = 50
+
+SEED = 42 # The meaning of life :)
