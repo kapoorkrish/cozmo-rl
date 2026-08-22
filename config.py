@@ -8,11 +8,12 @@ TASK = TouchCube()
 INIT_POLICY = None
 
 # Train: Behavioral Cloning (bc)
+BC_LR = 3e-4
 EPOCHS = 30
 BATCH_SIZE = 64
-LEARNING_RATE = 3e-4
 
 # Train: Proximal Policy Optimization (ppo)
+PPO_LR = 1.5e-4
 TIMESTEPS = 500_000
 NUM_ENVS = 4
 ROLLOUT = 2048

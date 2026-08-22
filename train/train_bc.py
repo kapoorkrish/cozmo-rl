@@ -11,7 +11,7 @@ from sim.simulation import CozmoSim
 from train.utils.environment import CozmoEnv
 
 from utils import BC_DIR
-from config import TASK, EPOCHS, BATCH_SIZE, LEARNING_RATE
+from config import TASK, EPOCHS, BATCH_SIZE, BC_LR
 
 MODEL_NAME = str(TASK)
 DEMO_DIR = Path(f"./demos/{TASK!s}")
@@ -58,7 +58,7 @@ model = PPO(
     env,
     n_steps=2048,
     batch_size=BATCH_SIZE,
-    learning_rate=LEARNING_RATE,
+    learning_rate=BC_LR,
     verbose=1,
 )
 
@@ -72,7 +72,7 @@ trainer = bc.BC(
     demonstrations=demos,
     policy=model.policy,
     batch_size=BATCH_SIZE,
-    optimizer_kwargs={"lr": LEARNING_RATE},
+    optimizer_kwargs={"lr": BC_LR},
     rng=np.random.default_rng(0),
 )
 trainer.train(n_epochs=EPOCHS)

@@ -12,7 +12,7 @@ from train.utils.environment import CozmoEnv
 from train.utils.mask_policy import MaskedMultiInputPolicy
 
 from utils import PPO_DIR
-from config import INIT_POLICY, NUM_ENVS, ROLLOUT, TASK, TIMESTEPS, VIDEO_EVERY
+from config import INIT_POLICY, PPO_LR, NUM_ENVS, ROLLOUT, TASK, TIMESTEPS, VIDEO_EVERY
 
 MODEL_NAME = str(TASK)
 
@@ -41,7 +41,7 @@ if __name__ == "__main__":
             policy_kwargs={"action_mask": TASK.get_action_mask()},
             n_steps=ROLLOUT // NUM_ENVS,
             batch_size=64,
-            learning_rate=3e-4,
+            learning_rate=PPO_LR,
             verbose=1,
         )
 
