@@ -9,6 +9,9 @@ from utils import HZ
 class LiftCube(Task):
     """Cozmo should align with a cube, drive to it, and lift it off the ground."""
 
+    tine_prefixes = ("tine_",)
+    groove_prefixes = ("c1_cc_slot_", "c1_cc_shelf_")
+
     # Max for one sec / frame rate = max for one step
     max_dist = 200.0 / HZ
     max_lift = 45.0
@@ -17,13 +20,19 @@ class LiftCube(Task):
     distance_prog_mult = 0.2
     align_prog_mult = 2
     lift_prog_mult = 5
-    tines_touched_bonus = 7.5
+    tines_insert_bonus = 7.5
     success_bonus = 50
     time_penalty = 0.01
 
-    def _body_geom_ids(self, model, body: str) -> set[int]:
-        bid = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, body)
-        return set(np.flatnonzero(model.geom_bodyid == bid).tolist())
+    def _prefix_geom_ids(self, model, prefixes: tuple[str, ...]) -> set[int]:
+        ids = set()
+
+        for g in range(model.ngeom):
+            name = mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_GEOM, g)
+            if name and name.startswith(prefixes):
+                ids.add(g)
+
+        return ids
 
     def _geom_ids(self, model, names: tuple[str, ...]) -> set[int]:
         ids = {mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_GEOM, n) for n in names}
@@ -42,12 +51,13 @@ class LiftCube(Task):
     def _cube_lift_height(self, state: dict[str, float]) -> float:
         return state["cube_z"] - self.start_cube_z
 
-    def _tines_touched_cube(self, sim) -> bool:
+    def _tines_in_groove(self, sim) -> bool:
         data = sim.data
 
+        # True if a tine geom and cube groove are a collision pair
         for i in range(data.ncon):
             collision = {data.contact[i].geom1, data.contact[i].geom2}
-            if collision & self.tine_ids and collision & self.cube_ids:
+            if collision & self.tine_ids and collision & self.groove_ids:
                 return True
 
         return False
@@ -61,11 +71,11 @@ class LiftCube(Task):
     def reset(self, sim):
         state = sim.get_raw_state()
 
-        self.tine_ids = self._geom_ids(sim.model, ("tine_left", "tine_right"))
-        self.cube_ids = self._body_geom_ids(sim.model, "c1_cube")
+        self.tine_ids = self._prefix_geom_ids(sim.model, self.tine_prefixes)
+        self.groove_ids = self._prefix_geom_ids(sim.model, self.groove_prefixes)
         self.start_cube_z = state["cube_z"]
 
-        self.tines_touched = False
+        self.tines_inserted = False
         self.prev_distance = self._distance_to_cube(state)
         self.prev_align = self._cube_alignment(state)
         self.prev_lift = 0.0
@@ -94,9 +104,9 @@ class LiftCube(Task):
                 + (lift_prog / self.max_lift)     * self.lift_prog_mult
                 - self.time_penalty)
 
-        if not self.tines_touched and self._tines_touched_cube(sim):
-            reward += self.tines_touched_bonus
-            self.tines_touched = True
+        if not self.tines_inserted and self._tines_in_groove(sim):
+            reward += self.tines_insert_bonus
+            self.tines_inserted = True
         
         if lift > self.max_lift:
             reward += self.success_bonus
