@@ -7,9 +7,10 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import SubprocVecEnv, VecMonitor
 
 from sim.simulation import CozmoSim
-from train.utils.load_model import load_checkpoint, load_policy, make_checkpoint
 from train.utils.environment import CozmoEnv
 from train.utils.mask_policy import MaskedMultiInputPolicy
+from train.utils.log_success import LogSuccessRate
+from train.utils.load_model import load_checkpoint, load_policy, make_checkpoint
 
 from utils import PPO_DIR
 from config import INIT_POLICY, PPO_LR, NUM_ENVS, ROLLOUT, TASK, TIMESTEPS, VIDEO_EVERY
@@ -31,7 +32,7 @@ def make_env(idx: int):
 
 
 if __name__ == "__main__":
-    env = VecMonitor(SubprocVecEnv([make_env(i) for i in range(NUM_ENVS)]))
+    env = VecMonitor(SubprocVecEnv([make_env(i) for i in range(NUM_ENVS)]), info_keywords=("is_success",))
     model, timesteps_done = load_checkpoint(MODEL_NAME, env)
 
     if model is None:
@@ -50,7 +51,7 @@ if __name__ == "__main__":
 
     model.learn(
         total_timesteps=TIMESTEPS - timesteps_done,
-        callback=make_checkpoint(MODEL_NAME),
+        callback=[make_checkpoint(MODEL_NAME), LogSuccessRate()],
         reset_num_timesteps=False,
     )
     model.save(os.path.join(PPO_DIR, MODEL_NAME))
