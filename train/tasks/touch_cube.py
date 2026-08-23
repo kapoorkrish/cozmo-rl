@@ -1,3 +1,4 @@
+import mujoco
 import numpy as np
 from typing import override
 
@@ -11,14 +12,15 @@ class TouchCube(Task):
     # Max for one sec / frame rate = max for one step
     max_dist = 200.0 / HZ
 
-    # Cube accel deviation to count as a touch
-    accel_threshold = 0.2
-
     # Weights for reward function
     distance_prog_mult = 0.2
-    align_prog_mult = 2
+    align_prog_mult = 3
     success_bonus = 50
     time_penalty = 0.01
+
+    def _geom_ids(self, model, body: str) -> set[int]:
+        bid = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, body)
+        return set(np.flatnonzero(model.geom_bodyid == bid).tolist())
 
     def _distance_to_cube(self, state: dict[str, float]) -> float:
         return float(np.hypot(state["cube_x"] - state["pose_x"], state["cube_y"] - state["pose_y"]))
@@ -30,13 +32,16 @@ class TouchCube(Task):
 
         return float(heading @ to_cube / (np.linalg.norm(to_cube) + 1e-6))
 
-    def _delta_accel(self, state: dict[str, float]) -> float:
-        accel = np.array([state["accel_x"], state["accel_y"], state["accel_z"]])
+    def _cube_touched(self, sim) -> bool:
+        data = sim.data
 
-        return float(np.linalg.norm(accel - self.start_accel))
+        # True if fork geom and cube geoms are colliding
+        for i in range(data.ncon):
+            collision = {data.contact[i].geom1, data.contact[i].geom2}
+            if collision & self.fork_ids and collision & self.cube_ids:
+                return True
 
-    def _cube_touched(self, state: dict[str, float]) -> bool:
-        return self._delta_accel(state) > self.accel_threshold
+        return False
 
     @override
     def get_fixed_actions(self) -> dict[int, float]:
@@ -47,7 +52,8 @@ class TouchCube(Task):
     def reset(self, sim):
         state = sim.get_raw_state()
 
-        self.start_accel = np.array([state["accel_x"], state["accel_y"], state["accel_z"]])
+        self.fork_ids = self._geom_ids(sim.model, "fork")
+        self.cube_ids = self._geom_ids(sim.model, "c1_cube")
 
         self.prev_distance = self._distance_to_cube(state)
         self.prev_align = self._cube_alignment(state)
@@ -71,11 +77,11 @@ class TouchCube(Task):
                 - self.time_penalty)
 
         # Big bonus for reaching objective
-        if self._cube_touched(state):
+        if self._cube_touched(sim):
             reward += self.success_bonus
 
         return reward
 
     @override
     def do_terminate(self, sim):
-        return self._cube_touched(sim.get_raw_state())
+        return self._cube_touched(sim)

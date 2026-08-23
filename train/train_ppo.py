@@ -46,7 +46,7 @@ if __name__ == "__main__":
             n_steps=ROLLOUT // NUM_ENVS,
             batch_size=64,
             learning_rate=PPO_LR,
-            target_kl=target_kl,
+            # target_kl=target_kl,
             verbose=1,
         )
 
