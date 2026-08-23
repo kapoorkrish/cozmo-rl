@@ -44,7 +44,7 @@ if __name__ == "__main__":
             env,
             policy_kwargs={"action_mask": action_mask},
             n_steps=ROLLOUT // NUM_ENVS,
-            batch_size=64,
+            batch_size=PPO_BATCH_SIZE,
             learning_rate=PPO_LR,
             target_kl=target_kl,
             verbose=1,

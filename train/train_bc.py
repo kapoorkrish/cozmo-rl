@@ -11,7 +11,7 @@ from sim.simulation import CozmoSim
 from train.utils.environment import CozmoEnv
 
 from utils import BC_DIR
-from config import TASK, EPOCHS, BATCH_SIZE, BC_LR
+from config import TASK, BC_EPOCHS, BC_BATCH_SIZE, BC_LR
 
 MODEL_NAME = str(TASK)
 DEMO_DIR = Path(f"./demos/{TASK!s}")
@@ -56,7 +56,7 @@ model = PPO(
     "MultiInputPolicy",
     env,
     n_steps=2048,
-    batch_size=BATCH_SIZE,
+    batch_size=BC_BATCH_SIZE,
     learning_rate=BC_LR,
     verbose=1,
 )
@@ -70,10 +70,10 @@ trainer = bc.BC(
     action_space=env.action_space,
     demonstrations=demos,
     policy=model.policy,
-    batch_size=BATCH_SIZE,
+    batch_size=BC_BATCH_SIZE,
     optimizer_kwargs={"lr": BC_LR},
     rng=np.random.default_rng(0),
 )
-trainer.train(n_epochs=EPOCHS)
+trainer.train(n_epochs=BC_EPOCHS)
 
 model.save(f"{BC_DIR}/{MODEL_NAME}")

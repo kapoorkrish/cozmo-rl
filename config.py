@@ -13,14 +13,15 @@ POLICY_TYPE = "bc"
 
 # Train: Behavioral Cloning (bc)
 BC_LR = 3e-4
-EPOCHS = 30
-BATCH_SIZE = 64
+BC_EPOCHS = 30
+BC_BATCH_SIZE = 64
 
 # Train: Proximal Policy Optimization (ppo)
 PPO_LR = 1.5e-4
-# KL_PER_DIM = 0.01
-KL_PER_DIM = None
+KL_PER_DIM = 0.01
+# KL_PER_DIM = None
 TIMESTEPS = 500_000
 NUM_ENVS = 4
-ROLLOUT = 2048
+ROLLOUT = 8192
+PPO_BATCH_SIZE = 256
 VIDEO_EVERY = 50
