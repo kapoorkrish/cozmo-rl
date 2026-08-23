@@ -10,7 +10,7 @@ class LiftCube(Task):
     """Cozmo should align with a cube, drive to it, and lift it off the ground."""
 
     tine_prefixes = ("tine_",)
-    groove_prefixes = ("c1_cc_slot_", "c1_cc_shelf_")
+    groove_prefixes = ("c1_cc_hipkt_")
 
     # Max for one sec / frame rate = max for one step
     max_dist = 200.0 / HZ
