@@ -13,7 +13,7 @@ from train.utils.log_success import LogSuccessRate
 from train.utils.load_model import load_checkpoint, load_policy, make_checkpoint
 
 from utils import PPO_DIR
-from config import INIT_POLICY, PPO_LR, NUM_ENVS, ROLLOUT, TASK, TIMESTEPS, VIDEO_EVERY
+from config import *
 
 MODEL_NAME = str(TASK)
 
@@ -33,21 +33,27 @@ def make_env(idx: int):
 
 if __name__ == "__main__":
     env = VecMonitor(SubprocVecEnv([make_env(i) for i in range(NUM_ENVS)]), info_keywords=("is_success",))
+    action_mask = TASK.get_action_mask()
+    target_kl = KL_PER_DIM * float(sum(action_mask))
+
     model, timesteps_done = load_checkpoint(MODEL_NAME, env)
 
     if model is None:
         model = PPO(
             MaskedMultiInputPolicy,
             env,
-            policy_kwargs={"action_mask": TASK.get_action_mask()},
+            policy_kwargs={"action_mask": action_mask},
             n_steps=ROLLOUT // NUM_ENVS,
             batch_size=64,
             learning_rate=PPO_LR,
+            target_kl=target_kl,
             verbose=1,
         )
 
         if INIT_POLICY:
             load_policy(model, INIT_POLICY)
+    else:
+        model.target_kl = target_kl
 
     model.learn(
         total_timesteps=TIMESTEPS - timesteps_done,

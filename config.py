@@ -14,6 +14,7 @@ BATCH_SIZE = 64
 
 # Train: Proximal Policy Optimization (ppo)
 PPO_LR = 1.5e-4
+KL_PER_DIM = 0.01
 TIMESTEPS = 500_000
 NUM_ENVS = 4
 ROLLOUT = 2048
