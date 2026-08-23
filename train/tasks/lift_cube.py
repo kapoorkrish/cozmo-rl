@@ -1,3 +1,4 @@
+import mujoco
 import numpy as np
 from typing import override
 
@@ -16,8 +17,17 @@ class LiftCube(Task):
     distance_prog_mult = 0.2
     align_prog_mult = 2
     lift_prog_mult = 5
+    tines_touched_bonus = 7.5
     success_bonus = 50
     time_penalty = 0.01
+
+    def _body_geom_ids(self, model, body: str) -> set[int]:
+        bid = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, body)
+        return set(np.flatnonzero(model.geom_bodyid == bid).tolist())
+
+    def _geom_ids(self, model, names: tuple[str, ...]) -> set[int]:
+        ids = {mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_GEOM, n) for n in names}
+        return ids
 
     def _distance_to_cube(self, state: dict[str, float]) -> float:
         return float(np.hypot(state["cube_x"] - state["pose_x"], state["cube_y"] - state["pose_y"]))
@@ -32,6 +42,16 @@ class LiftCube(Task):
     def _cube_lift_height(self, state: dict[str, float]) -> float:
         return state["cube_z"] - self.start_cube_z
 
+    def _tines_touched_cube(self, sim) -> bool:
+        data = sim.data
+
+        for i in range(data.ncon):
+            collision = {data.contact[i].geom1, data.contact[i].geom2}
+            if collision & self.tine_ids and collision & self.cube_ids:
+                return True
+
+        return False
+
     @override
     def get_fixed_actions(self):
         # Keep head position constant
@@ -41,8 +61,11 @@ class LiftCube(Task):
     def reset(self, sim):
         state = sim.get_raw_state()
 
+        self.tine_ids = self._geom_ids(sim.model, ("tine_left", "tine_right"))
+        self.cube_ids = self._body_geom_ids(sim.model, "c1_cube")
         self.start_cube_z = state["cube_z"]
 
+        self.tines_touched = False
         self.prev_distance = self._distance_to_cube(state)
         self.prev_align = self._cube_alignment(state)
         self.prev_lift = 0.0
@@ -71,6 +94,10 @@ class LiftCube(Task):
                 + (lift_prog / self.max_lift)     * self.lift_prog_mult
                 - self.time_penalty)
 
+        if not self.tines_touched and self._tines_touched_cube(sim):
+            reward += self.tines_touched_bonus
+            self.tines_touched = True
+        
         if lift > self.max_lift:
             reward += self.success_bonus
 

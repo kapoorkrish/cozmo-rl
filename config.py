@@ -4,8 +4,8 @@ from train.tasks.lift_cube import LiftCube
 from train.tasks.touch_cube import TouchCube
 
 # Specify task to train and optional policy to initialize training from
-TASK = TouchCube()
-INIT_POLICY = None
+TASK = LiftCube()
+INIT_POLICY = "touch_cube"
 
 # Train: Behavioral Cloning (bc)
 BC_LR = 3e-4

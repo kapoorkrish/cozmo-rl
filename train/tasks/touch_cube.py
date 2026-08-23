@@ -18,7 +18,7 @@ class TouchCube(Task):
     success_bonus = 50
     time_penalty = 0.01
 
-    def _geom_ids(self, model, body: str) -> set[int]:
+    def _body_geom_ids(self, model, body: str) -> set[int]:
         bid = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, body)
         return set(np.flatnonzero(model.geom_bodyid == bid).tolist())
 
@@ -52,8 +52,8 @@ class TouchCube(Task):
     def reset(self, sim):
         state = sim.get_raw_state()
 
-        self.fork_ids = self._geom_ids(sim.model, "fork")
-        self.cube_ids = self._geom_ids(sim.model, "c1_cube")
+        self.fork_ids = self._body_geom_ids(sim.model, "fork")
+        self.cube_ids = self._body_geom_ids(sim.model, "c1_cube")
 
         self.prev_distance = self._distance_to_cube(state)
         self.prev_align = self._cube_alignment(state)
