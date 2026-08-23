@@ -2,7 +2,9 @@ import numpy as np
 import glfw
 import mujoco
 
+from sim.simulation import CozmoSim
 from utils import HZ, STATE_MIN
+from config import TASK
 
 WHEEL_R_MM = 13.14
 MAX_SPEED_MMPS = 200.0
@@ -28,30 +30,41 @@ def _ramp(cur: float, target: float, dt: float, scale: float) -> float:
 class Control:
     """Drive, lift, and head control."""
 
-    def __init__(self, model: mujoco.MjModel, data: mujoco.MjData):
-        self.model, self.data = model, data
+    def __init__(self, sim: CozmoSim):
+        self.model, self.data = sim.model, sim.data
+        self.act_ids = sim.act_ids
+        self.fixed_actions = TASK.get_fixed_actions()
 
-        self.a_lwheel = _actuator_id(model, "left_front_motor")
-        self.a_rwheel = _actuator_id(model, "right_front_motor")
-        self.a_head = _actuator_id(model, "head_motor")
-        self.a_lift = _actuator_id(model, "lift_motor")
+        self.a_lwheel = _actuator_id(self.model, "left_front_motor")
+        self.a_rwheel = _actuator_id(self.model, "right_front_motor")
+        self.a_head = _actuator_id(self.model, "head_motor")
+        self.a_lift = _actuator_id(self.model, "lift_motor")
 
-        self.head_lo, self.head_hi = model.actuator_ctrlrange[self.a_head]
-        self.lift_lo, self.lift_hi = model.actuator_ctrlrange[self.a_lift]
+        self.head_lo, self.head_hi = self.model.actuator_ctrlrange[self.a_head]
+        self.lift_lo, self.lift_hi = self.model.actuator_ctrlrange[self.a_lift]
 
         dt = 1 / HZ
-        self.n_substeps = max(1, round(dt / model.opt.timestep))
+        self.n_substeps = max(1, round(dt / self.model.opt.timestep))
         self.reset()
+
+    def _apply_fixed(self) -> None:
+        """Overwrite sim actions with fixed action values and update control state."""
+        for i, value in self.fixed_actions.items():
+            self.data.ctrl[self.act_ids[i]] = value
+
+        self.left = float(self.data.ctrl[self.a_lwheel]) * WHEEL_R_MM
+        self.right = float(self.data.ctrl[self.a_rwheel]) * WHEEL_R_MM
+        self.head_tgt = float(self.data.ctrl[self.a_head])
+        self.lift_tgt = float(self.data.ctrl[self.a_lift])
 
     def reset(self) -> None:
         """Reset control states."""
         self.v_cur = self.w_cur = 0.0
-        self.left = self.right = 0.0
-        self.head_tgt = 0.0
-        self.lift_tgt = STATE_MIN[6]
 
         self.data.ctrl[:] = 0.0
-        self.data.ctrl[self.a_lift] = self.lift_tgt
+        self.data.ctrl[self.a_head] = 0.0
+        self.data.ctrl[self.a_lift] = STATE_MIN[6]
+        self._apply_fixed()
 
     def apply(self, held: set[int], dt: float) -> None:
         """Map held keys to actuator commands for one timestep."""

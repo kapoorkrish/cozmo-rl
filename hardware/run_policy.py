@@ -6,10 +6,10 @@ from stable_baselines3 import PPO
 
 from hardware.utils.observer import CozmoObserver
 
-from config import TASK
+from config import TASK, POLICY_TYPE
 from utils import HZ, lift_rad_to_mm, wheel_rad_to_mm
 
-MODEL = f"./models/ppo/{TASK!s}"
+MODEL = f"./models/{POLICY_TYPE}/{TASK!s}"
 MAX_STEPS = 1000
 FLUSH_TIME = 0.5
 

@@ -8,10 +8,10 @@ import time
 from sim.simulation import CozmoSim
 from train.utils.environment import CozmoEnv
 
-from config import TASK
+from config import TASK, POLICY_TYPE
 from utils import HZ
 
-MODEL = f"./models/ppo/{TASK!s}"
+MODEL = f"./models/{POLICY_TYPE}/{TASK!s}"
 NUM_EPISODES = 5
 
 

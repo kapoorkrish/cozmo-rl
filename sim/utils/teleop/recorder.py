@@ -33,10 +33,10 @@ class Recorder:
 
     def toggle(self) -> None:
         """Save the episode in progress, or start a new one."""
-        self.save() if self.recording else self.reset()
+        self.save() if self.recording else self.start()
 
-    def reset(self) -> None:
-        """Reset on a fresh seed."""
+    def start(self) -> None:
+        """Start a new episode on a fresh seed."""
         seed = int(np.random.SeedSequence().entropy % (2 ** 32))
         self.reset(seed)
 

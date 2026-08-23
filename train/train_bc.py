@@ -30,7 +30,6 @@ def load_demos(demo_dir):
     for f in files:
         d = np.load(f)
         ep = {"state": d["state"], "vision": d["vision"]}
-        print(ep)
 
         obs.append(ep)
         next_obs.append({k: np.concatenate([v[1:], v[-1:]]) for k, v in ep.items()})

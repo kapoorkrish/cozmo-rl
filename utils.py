@@ -39,6 +39,7 @@ SPAWN_GAP = 0.09
 
 PPO_DIR = "./models/ppo"
 BC_DIR = "./models/bc"
+CHECKPOINT_DIR = "./models/checkpoints"
 
 
 def normalize_state(state: np.ndarray) -> np.ndarray:
