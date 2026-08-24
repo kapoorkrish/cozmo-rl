@@ -88,18 +88,22 @@ class RollCube(Task):
         align_prog = align - self.prev_align
         self.prev_align = align
 
+        reward = ((distance_prog / self.max_dist) * self.distance_prog_mult
+                + align_prog                      * self.align_prog_mult
+                - self.time_penalty)
+
         # Cube tilt progress, measured by z axis acceleration due to gravity
         tilt = self._cube_tilt(state)
         tilt_prog = self.prev_tilt - tilt
-        self.prev_tilt = tilt
 
-        reward = ((distance_prog / self.max_dist) * self.distance_prog_mult
-                + align_prog                      * self.align_prog_mult
-                + tilt_prog                       * self.tilt_prog_mult
-                - self.time_penalty)
+        fork_on_cube = self._fork_on_cube(sim)
+        # Only award cube tilt progress if fork is is contact with top of cube
+        if fork_on_cube:
+            reward += tilt_prog * self.tilt_prog_mult
+            self.prev_tilt = tilt
 
         # Bonus for fork bottom touching top of cube
-        if not self.fork_contacted and self._fork_on_cube(sim):
+        if not self.fork_contacted and fork_on_cube:
             reward += self.fork_contact_bonus
             self.fork_contacted = True
 
@@ -107,11 +111,11 @@ class RollCube(Task):
         self.tipped_steps = self.tipped_steps + 1 if tilt < self.tilt_threshold else 0
 
         # Bonus for cube tipped in a settled state
-        if self.tipped_steps == self.settle_steps:
+        if self.fork_contacted and self.tipped_steps == self.settle_steps:
             reward += self.success_bonus
 
         return reward
 
     @override
     def do_terminate(self, sim):
-        return self.tipped_steps >= self.settle_steps
+        return self.fork_contacted and self.tipped_steps >= self.settle_steps
