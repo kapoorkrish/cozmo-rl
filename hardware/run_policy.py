@@ -10,7 +10,6 @@ from config import TASK, POLICY_TYPE
 from utils import HZ, lift_rad_to_mm, wheel_rad_to_mm
 
 MODEL = f"./models/{POLICY_TYPE}/{TASK!s}"
-MAX_STEPS = 1000
 FLUSH_TIME = 0.5
 
 def _apply_action(cli, action) -> None:
@@ -52,12 +51,14 @@ with pycozmo.connect() as cli:  # type: ignore
         input("Press Enter to run policy.")
         cli.set_head_angle(0)
 
-        for step in range(MAX_STEPS):
+        step = 0
+        while True:
             start = time.perf_counter()
 
             obs = observer.get_obs()
             action, _ = model.predict(obs, deterministic=True)
             _apply_action(cli, action)
+            step += 1
 
             print(f"{step:4d} {np.array2string(action, precision=2)}")
             time.sleep(max(0.0, (1 / HZ) - (time.perf_counter() - start)))
