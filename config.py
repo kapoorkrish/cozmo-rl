@@ -1,11 +1,10 @@
 """Configure task and hyperparameters."""
 
-from train.tasks.lift_cube import LiftCube
-from train.tasks.touch_cube import TouchCube
+from train.tasks import *
 
 # Specify task to train and optional policy to initialize training from
-TASK = LiftCube()
-INIT_POLICY = "./models/bc/lift_cube"
+TASK = RollCube()
+INIT_POLICY = None
 
 # Specify whether to run BC or PPO policy when running run_policy
 POLICY_TYPE = "ppo"

@@ -21,6 +21,7 @@ from sim.utils.teleop.recorder import Recorder
 from sim.utils.teleop.window import Window
 
 from utils import HZ
+from config import TASK
 
 SHOW_FRAMES = False
 SCALE = 6
