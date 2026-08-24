@@ -21,7 +21,6 @@ from sim.utils.teleop.recorder import Recorder
 from sim.utils.teleop.window import Window
 
 from utils import HZ
-from config import TASK
 
 SHOW_FRAMES = False
 SCALE = 6
@@ -50,8 +49,6 @@ while not window.should_close():
     control.apply(window.held, 1 / HZ)
     recorder.capture()
     sim.step_sim()
-
-    state = sim.get_raw_state()
 
     window.render(control.status_lines() + recorder.status_lines())
 

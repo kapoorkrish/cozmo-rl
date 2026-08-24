@@ -4,10 +4,10 @@ from train.tasks import *
 
 # Specify task to train and optional policy to initialize training from
 TASK = RollCube()
-INIT_POLICY = None
+INIT_POLICY = "./models/bc/roll_cube"
 
 # Specify whether to run BC or PPO policy when running run_policy
-POLICY_TYPE = "ppo"
+POLICY_TYPE = "bc"
 
 
 # Train: Behavioral Cloning (bc)

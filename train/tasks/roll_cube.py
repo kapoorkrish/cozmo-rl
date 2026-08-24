@@ -44,8 +44,7 @@ class RollCube(Task):
         return float(heading @ to_cube / (np.linalg.norm(to_cube) + 1e-6))
 
     def _cube_tilt(self, state: dict[str, float]) -> float:
-        print(state["accel_z"] / 9.81)
-        return np.clip(state["accel_z"] / 9.81, -1.0, 1.0)
+        return np.clip(state["accel_z"], -1.0, 1.0)
     
     def _fork_on_cube(self, sim) -> bool:
         data = sim.data
