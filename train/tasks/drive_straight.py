@@ -32,7 +32,7 @@ class DriveStraight(Task):
 
         self.pos_start = np.array([state["pose_x"], state["pose_y"]])
         self.pos_prev = self.pos_start.copy()
-        self.angle_prev = state["pose_angle"]
+        self.pose_angle_prev = state["pose_angle"]
 
     @override
     def reward(self, sim, action):
