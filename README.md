@@ -14,6 +14,7 @@ This repository is an entry point for self-learners, researchers, and robotics e
 - [Gym Environment](#gym-environment)
   - [Action Space](#action-space)
   - [Observation Space](#observation-space)
+- [Adding a New Task](#adding-a-new-task)
 - [Training Pipeline](#training-pipeline)
   - [1. Record expert demos](#1-record-expert-demos)
   - [2. Train using Behavioral cloning (BC)](#2-train-using-behavioral-cloning-bc)
@@ -24,7 +25,6 @@ This repository is an entry point for self-learners, researchers, and robotics e
 - [Debugging Scripts](#debugging-scripts)
   - [hardware/test](#hardwaretest)
   - [sim](#sim)
-- [Adding a New Task](#adding-a-new-task)
 - [Acknowledgements](#acknowledgements)
 
 ## Setup
@@ -107,6 +107,41 @@ A custom gym environment was built for Cozmo, which respects the real hardware a
 - Downsampled to 80 x 60 x 1
   - Stack of 3 images for temporal info
 
+## Adding a New Task
+
+A new task is created by defining a new Python file in `train/tasks`. `Task` is an abstract interface that should be implemented when defining new tasks.
+
+- The following methods must be implemented:
+```python
+@abstractmethod
+def reset(self, sim: CozmoSim) -> None:
+    """Defines logic to reset task state for new episode."""
+
+@abstractmethod
+def reward(self, sim: CozmoSim, action: np.ndarray) -> float:
+    """Defines reward function for the task."""
+
+@abstractmethod
+def do_terminate(self, sim: CozmoSim) -> bool:
+    """Defines condition to terminate the episode (success or failure)."""
+```
+- The following method should be overriden if the task should pin an action value that does not need training to execute the task:
+```python
+def get_fixed_actions(self) -> dict[int, float]:
+    """Defines actions to keep constant for the task. \n
+    {action_id: action_value}"""
+    return {}
+```
+
+
+- Ensure that your new task is imported in `train/tasks/__init__.py` so it can be accessed in `config.py`
+
+**Note:**
+- CozmoSim provides `get_raw_state()`, which offers privileged info about the cube state and step count, not available in reality. These can be used for defining reward conditions and the termination condition, but note that they are not sent to the policy during training.
+
+  - E.g. TouchCube uses distance from the cube as a reward metric, but the policy must learn a correlation from just its sensors and vision.
+
+See existing tasks for examples.
 
 ## Training Pipeline
 1. Record expert demos for the task, controlling the robot in sim using `teleop_sim.py`.
@@ -200,42 +235,6 @@ Connects to Cozmo via its Wi-Fi and streams robot, cube, and camera data to crea
 ### sim
 - `view_sim.py`
   - Show domain randomized simulation environment in default MuJoCo viewer.
-
-## Adding a New Task
-
-A new task is created by defining a new Python file in `train/tasks`. `Task` is an abstract interface that should be implemented when defining new tasks.
-
-- The following methods must be implemented:
-```python
-@abstractmethod
-def reset(self, sim: CozmoSim) -> None:
-    """Defines logic to reset task state for new episode."""
-
-@abstractmethod
-def reward(self, sim: CozmoSim, action: np.ndarray) -> float:
-    """Defines reward function for the task."""
-
-@abstractmethod
-def do_terminate(self, sim: CozmoSim) -> bool:
-    """Defines condition to terminate the episode (success or failure)."""
-```
-- The following method should be overriden if the task should pin an action value that does not need training to execute the task:
-```python
-def get_fixed_actions(self) -> dict[int, float]:
-    """Defines actions to keep constant for the task. \n
-    {action_id: action_value}"""
-    return {}
-```
-
-
-- Ensure that your new task is imported in `train/tasks/__init__.py` so it can be accessed in `config.py`
-
-**Note:**
-- CozmoSim provides `get_raw_state()`, which offers privileged info about the cube state and step count, not available in reality. These can be used for defining reward conditions and the termination condition, but note that they are not sent to the policy during training.
-
-  - E.g. TouchCube uses distance from the cube as a reward metric, but the policy must learn a correlation from just its sensors and vision.
-
-See existing tasks for examples.
 
 ## Acknowledgements
 - Floor/wall textures are from [Poly Haven](https://polyhaven.com/).
