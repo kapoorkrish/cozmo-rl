@@ -32,8 +32,6 @@ def make_env(idx: int):
 
 if __name__ == "__main__":
     env = VecMonitor(SubprocVecEnv([make_env(i) for i in range(NUM_ENVS)]), info_keywords=("is_success",))
-    action_mask = TASK.get_action_mask()
-    target_kl = KL_PER_DIM * float(sum(action_mask)) if KL_PER_DIM else None
 
     model, timesteps_done = load_checkpoint(MODEL_NAME, env)
 
@@ -44,14 +42,14 @@ if __name__ == "__main__":
             n_steps=ROLLOUT // NUM_ENVS,
             batch_size=PPO_BATCH_SIZE,
             learning_rate=PPO_LR,
-            target_kl=target_kl,
+            target_kl=TARGET_KL,
             verbose=1,
         )
 
         if INIT_POLICY:
             load_policy(model, INIT_POLICY)
     else:
-        model.target_kl = target_kl
+        model.target_kl = TARGET_KL
 
     model.learn(
         total_timesteps=TIMESTEPS - timesteps_done,

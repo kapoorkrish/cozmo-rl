@@ -15,6 +15,7 @@ from utils import ACTION_MIN, ACTION_MAX
 class Task(ABC):
     """Defines a task to learn in simulation."""
 
+    # Override this if the task should pin action value(s)
     def get_fixed_actions(self) -> dict[int, float]:
         """Defines actions to keep constant for the task. \n
         {action_id: action_value}"""
@@ -26,13 +27,6 @@ class Task(ABC):
         """Class name in snake_case used for paths and model names."""
         return re.sub(r"(?<!^)(?=[A-Z])", "_", type(self).__name__).lower()
     
-    @final
-    def get_action_mask(self) -> np.ndarray:
-        """Defines fixed actions mask for policy to avoid training them."""
-        mask = np.ones(len(ACTION_MIN), dtype=np.float32)
-        mask[list(self.get_fixed_actions())] = 0.0
-        return mask
-
     @final
     def map_action(self, action: np.ndarray) -> np.ndarray:
         """Maps actions from [-1,1] to task's action space"""
