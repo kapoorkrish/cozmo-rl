@@ -212,6 +212,89 @@ python -m sim.run_policy
 
 Loads `models/<POLICY_TYPE>/<task_name>.zip` and runs 5 episodes in the MuJoCo viewer.
 
+Collect failure samples for the policy selected by `TASK` and `POLICY_TYPE` in
+`config.py` (for example, `TASK = TouchCube()` and `POLICY_TYPE = "ppo"`):
+
+```bash
+python -m experiments.collect_failures
+```
+
+Defaults to 50 failures, seed 0, and a maximum of 1000 episodes. Optional arguments:
+`--samples 50 --seed 0 --max-episodes 1000`. The model is loaded from
+`models/<POLICY_TYPE>/<TASK>.zip`; failure uses the environment's `is_success` metric.
+For TouchCube, failure means the 500-step limit was reached without fork contact.
+
+All files go directly into `experiments/failure_samples/<TASK>/`, with no run, worker, or
+sample subdirectories. Open `index.html` to see paired head-camera/world images
+and labeled state vectors. Each `sample_001` prefix has `_initial.png`,
+`_failure.png`, `.json` (states and seed), and `.npz` (exact policy observations
+and trajectory). `summary.json` records the model hash and collection settings;
+`episodes.json` and `samples.csv` list the outcomes and sample vectors. RGB images
+precede sensor noise; NPZ vision arrays contain the actual policy inputs.
+The HTML report and console explicitly show the total number of evaluated
+episodes (successes plus failures). `summary.json` stores this as
+`episodes_evaluated`, alongside `successes_observed` and `failures_collected`.
+
+The report includes 2D state comparisons, with successes on the left and failures
+on the right using identical axis limits. It also plots initial Cozmo and cube
+positions together in the spawn frame, connecting each episode's starting pair.
+Comparisons cover terminal robot x/y,
+left/right wheel speeds, heading versus mean wheel speed, mean versus differential
+wheel speed, and cube acceleration where it varies meaningfully. Initial cube
+forward/lateral position and distance/bearing are plotted separately and labeled
+as privileged simulator data. Fixed head/lift, redundant sine/cosine, and pairs
+with negligible variation are omitted. Points represent episode endpoints, not
+all trajectory frames; terminal outcomes do not establish advance predictors.
+
+New collections save normalized and raw initial/final states for **every** episode
+in `episodes.json` and build the plots when collection finishes. To rebuild plots
+or add states to older collections:
+
+```bash
+python -m experiments.collect_failures --update-plots
+```
+
+Saved failure states are reused. Missing episode states are recovered by replaying
+their seeds with the original model and task. Each replay must match the recorded
+outcome, step count, and reward sum before its states are saved. Verified states
+are checkpointed after each episode, so rerunning resumes missing replays; the
+HTML plots refresh every ten replays and at completion. Coverage counts make
+partial backfills explicit. Plot PNGs are saved beside `index.html`.
+
+Each collection reports `initial_value` from the loaded PPO critic, evaluated
+on the exact initial state **and vision** inputs. The final critic is not evaluated.
+`cumulative_reward` is the actual undiscounted sum of trajectory rewards (also
+stored as `return`). `discounted_return` sums the same rewards with the model's
+discount factor, recorded as `critic_gamma` in `summary.json`. These metrics
+appear in each sample JSON, `samples.csv`, `episodes.json`, and `index.html`.
+
+To add or recompute metrics for an existing collection:
+
+```bash
+python -m experiments.collect_failures --update-metrics
+```
+
+This reads the saved failure endpoint observations and reward arrays in each NPZ
+and regenerates the reports. It checks that the configured model's SHA-256 matches
+the collection before updating anything; images and trajectory arrays are kept.
+Legacy success entries without saved observations retain their original fields.
+To record all three metrics uniformly for successes and failures, collect a fresh
+set with `python -m experiments.collect_failures`. New collections record the metrics for
+every episode directly.
+
+The critic estimates discounted future reward; compare it with
+`discounted_return`, rather than the undiscounted sum. The observed discounted
+sum ends at the episode boundary and excludes estimated continuation rewards
+when a timeout truncates the episode.
+These are reward diagnostics for sim-to-real analysis; the reach-avoid value in
+[the calibration paper, Eq. (1)](https://arxiv.org/pdf/2603.24894) uses target and
+constraint functions and is a different trajectory label.
+
+The same model, settings, and software environment reproduce the collection.
+To replay one failed episode, use its JSON seed with `--samples 1 --seed <seed>`.
+Move or clear the output directory before rerunning; existing samples are never
+overwritten. Generated collections are ignored by Git.
+
 ### Run on real hardware
 
 ```bash
@@ -244,3 +327,6 @@ Connects to Cozmo via its Wi-Fi and streams robot, cube, and camera data to crea
   The Cozmo fork mesh from `RazuProject` was convex-hulled and edited in Blender for accurate fork collisions.
 
 - The URDFs in [nilseuropa/anki_description](https://github.com/nilseuropa/anki_description) were converted and used as a reference for building the MuJoCo XMLs in `sim/models/`.
+
+An interrupted collection can be continued with `python -m experiments.collect_failures --resume`
+using the original model, seed, and sample target.

@@ -1,5 +1,6 @@
 /models/checkpoints
 /models/videos
+/experiments/failure_samples/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

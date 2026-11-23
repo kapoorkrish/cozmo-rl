@@ -2,8 +2,8 @@
 
 from train.tasks import *
 
-TASK = RollCube()
-INIT_POLICY = "./models/bc/roll_cube"
+TASK = TouchCube()
+INIT_POLICY = None
 POLICY_TYPE = "ppo"
 
 
